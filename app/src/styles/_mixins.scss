@@ -1,0 +1,44 @@
+@use "variables" as *;
+
+// ---------- Responsive ----------
+@mixin sm  { @media (min-width: $bp-sm)  { @content; } }
+@mixin md  { @media (min-width: $bp-md)  { @content; } }
+@mixin lg  { @media (min-width: $bp-lg)  { @content; } }
+@mixin xl  { @media (min-width: $bp-xl)  { @content; } }
+@mixin xxl { @media (min-width: $bp-2xl) { @content; } }
+
+// ---------- Truncate ----------
+@mixin truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@mixin line-clamp($n) {
+  display: -webkit-box;
+  -webkit-line-clamp: $n;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ---------- Card ----------
+@mixin card {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+}
+
+// ---------- Scrollbar ----------
+@mixin custom-scrollbar {
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: $radius-full;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}

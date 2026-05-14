@@ -1,0 +1,186 @@
+@use "../../styles/variables" as *;
+
+.canvas {
+  width: $onepage-width;
+  min-height: $onepage-height;
+  background: white;
+  color: $gray-900;
+  font-family: $font-thai-sarabun;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+  --accent: #{$brand-700};
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $space-4 $space-6;
+  background: var(--accent);
+  color: white;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: white;
+  border-radius: $radius-md;
+  padding: $space-1;
+}
+
+.logoFallback {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px dashed rgba(255, 255, 255, 0.5);
+  border-radius: $radius-md;
+  display: grid;
+  place-items: center;
+  font-size: $font-size-xs;
+}
+
+.agency {
+  font-size: $font-size-lg;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: $font-size-sm;
+  opacity: 0.85;
+}
+
+.date {
+  font-size: $font-size-sm;
+  opacity: 0.9;
+}
+
+.titleBand {
+  padding: $space-3 $space-6;
+  background: linear-gradient(to right, var(--accent), color-mix(in srgb, var(--accent) 70%, white));
+  color: white;
+}
+
+.titleBand h1 {
+  font-size: $font-size-3xl;
+  font-weight: 700;
+  margin: 0;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-4;
+  padding: $space-4 $space-6;
+}
+
+.left,
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+}
+
+.block {
+  border-left: 3px solid var(--accent);
+  padding: $space-1 $space-3;
+}
+
+.blockLabel {
+  font-size: $font-size-sm;
+  color: $gray-500;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.blockValue {
+  font-size: $font-size-md;
+  line-height: 1.45;
+  // `pre-line`: keep Enter key line-breaks the user typed in the textarea,
+  // but collapse consecutive spaces (Word-like). Avoids the oversized gaps
+  // we saw with `pre-wrap` + multi-space input.
+  white-space: pre-line;
+}
+
+.image {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: $radius-md;
+  background: $gray-100;
+}
+
+.metaRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-3;
+}
+
+.metaCard {
+  border: 1px solid $gray-200;
+  border-radius: $radius-md;
+  padding: $space-3;
+  background: $gray-50;
+}
+
+.metaLabel {
+  font-size: $font-size-xs;
+  color: $gray-500;
+  font-weight: 600;
+}
+
+.metaValue {
+  font-size: $font-size-lg;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.section {
+  border: 1px solid $gray-200;
+  border-radius: $radius-md;
+  padding: $space-3;
+  background: $gray-50;
+}
+
+.sectionLabel {
+  font-size: $font-size-sm;
+  color: $gray-700;
+  font-weight: 700;
+  margin-bottom: $space-2;
+}
+
+.list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+}
+
+.footer {
+  background: $gray-50;
+  border-top: 1px solid $gray-200;
+  padding: $space-3 $space-6;
+}
+
+.outcomeLabel {
+  font-size: $font-size-sm;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.outcomeValue {
+  font-size: $font-size-md;
+  line-height: 1.45;
+  white-space: pre-line;
+}

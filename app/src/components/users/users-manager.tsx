@@ -1,0 +1,308 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Plus, Edit, Trash2, KeyRound, Power } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+
+type User = {
+  id: string;
+  email: string;
+  name: string | null;
+  title: string | null;
+  phone: string | null;
+  role: "ADMIN" | "USER";
+  isActive: boolean;
+  avatarUrl: string | null;
+  createdAt: string;
+};
+
+export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
+  const t = useTranslations();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+
+  async function refresh() {
+    router.refresh();
+  }
+
+  async function save(form: FormData) {
+    const payload: any = Object.fromEntries(form.entries());
+    if (payload.password === "") delete payload.password;
+    payload.role = payload.role || "USER";
+
+    try {
+      const url = editing ? `/api/users/${editing.id}` : "/api/users";
+      const method = editing ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(t("users.saved"));
+      setOpen(false);
+      setEditing(null);
+      refresh();
+    } catch {
+      toast.error(t("common.error"));
+    }
+  }
+
+  async function toggleActive(u: User) {
+    await fetch(`/api/users/${u.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !u.isActive }),
+    });
+    refresh();
+  }
+
+  async function performDelete(u: User) {
+    const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success(t("users.deleted"));
+      refresh();
+    } else {
+      toast.error(t("common.error"));
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t("users.title")}</h1>
+        <Dialog
+          open={open}
+          onOpenChange={(o) => {
+            setOpen(o);
+            if (!o) setEditing(null);
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button onClick={() => setEditing(null)}>
+              <Plus className="h-4 w-4" /> {t("users.add")}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editing ? t("users.edit") : t("users.add")}
+              </DialogTitle>
+              <DialogDescription>
+                {t("users.dialogDescription")}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              action={save}
+              className="grid gap-3"
+            >
+              {!editing && (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="user-email">{t("common.email")}</Label>
+                  <Input
+                    id="user-email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="user-name">{t("common.name")}</Label>
+                  <Input
+                    id="user-name"
+                    name="name"
+                    defaultValue={editing?.name ?? ""}
+                    autoComplete="name"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="user-title">{t("common.title")}</Label>
+                  <Input
+                    id="user-title"
+                    name="title"
+                    defaultValue={editing?.title ?? ""}
+                    autoComplete="organization-title"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="user-phone">{t("common.phone")}</Label>
+                  <Input
+                    id="user-phone"
+                    name="phone"
+                    defaultValue={editing?.phone ?? ""}
+                    autoComplete="tel"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="user-role">{t("common.role")}</Label>
+                  <select
+                    id="user-role"
+                    name="role"
+                    defaultValue={editing?.role ?? "USER"}
+                    className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    aria-label={t("common.role")}
+                  >
+                    <option value="USER">{t("users.role.user")}</option>
+                    <option value="ADMIN">{t("users.role.admin")}</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="user-password">
+                  {t("users.password")}{" "}
+                  {editing && (
+                    <span className="text-xs text-muted-foreground">
+                      ({t("users.passwordPlaceholder")})
+                    </span>
+                  )}
+                </Label>
+                <Input
+                  id="user-password"
+                  name="password"
+                  type="password"
+                  placeholder={editing ? t("users.passwordPlaceholder") : "•••••••"}
+                  minLength={editing ? 0 : 8}
+                  required={!editing}
+                  autoComplete="new-password"
+                  aria-describedby="user-password-hint"
+                />
+                {!editing && (
+                  <p id="user-password-hint" className="text-xs text-muted-foreground">
+                    {t("password.hint")}
+                  </p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button type="submit">{t("common.save")}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <caption className="sr-only">{t("users.title")}</caption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("common.email")}</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.role")}</TableHead>
+                <TableHead>{t("common.status")}</TableHead>
+                <TableHead>{t("common.createdAt")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {initialUsers.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.email}</TableCell>
+                  <TableCell>{u.name ?? "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={u.role === "ADMIN" ? "default" : "secondary"}>
+                      {u.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {u.isActive ? (
+                      <Badge variant="success">{t("common.active")}</Badge>
+                    ) : (
+                      <Badge variant="destructive">{t("common.inactive")}</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatDate(u.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditing(u);
+                        setOpen(true);
+                      }}
+                      aria-label={t("users.edit")}
+                      title={t("users.edit")}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleActive(u)}
+                      aria-label={u.isActive ? t("users.disable") : t("users.enable")}
+                      title={u.isActive ? t("users.disable") : t("users.enable")}
+                      aria-pressed={u.isActive}
+                    >
+                      <Power className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteTarget(u)}
+                      aria-label={t("common.delete")}
+                      title={t("common.delete")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title={t("common.delete")}
+        description={
+          deleteTarget
+            ? t("users.deleteConfirm", { email: deleteTarget.email })
+            : ""
+        }
+        confirmLabel={t("common.delete")}
+        variant="destructive"
+        onConfirm={async () => {
+          if (deleteTarget) await performDelete(deleteTarget);
+          setDeleteTarget(null);
+        }}
+      />
+    </div>
+  );
+}

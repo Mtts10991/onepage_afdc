@@ -1,0 +1,213 @@
+// Prisma schema for OnePage app
+// - SQLite local (ไม่รองรับ enum → ใช้ String + check ใน app)
+// - Auth.js compatible (User, Account, Session, VerificationToken)
+// - OnePage + OnePageVersion (เก็บประวัติเพื่อย้อนกลับ/Export)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role: "ADMIN" | "USER"  (SQLite ไม่รองรับ enum → ใช้ String)
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  title         String?   // ตำแหน่ง
+  phone         String?
+  avatarUrl     String?
+  role          String    @default("USER")  // "ADMIN" | "USER"
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  onepages         OnePage[]      @relation("OwnedOnePages")
+  lastEditedPages  OnePage[]      @relation("LastEditedOnePages")
+  versions         OnePageVersion[]
+  templates        Template[]
+  groupMemberships GroupMembership[]
+  accounts         Account[]
+  sessions         Session[]
+}
+
+/// "สายงาน" — a working group that lets members share visibility and
+/// edit access on each other's onepages. A user can belong to several
+/// groups (e.g. someone working across two departments) so we model
+/// the relationship via an explicit join table (`GroupMembership`)
+/// rather than a simple `groupId` column on User.
+///
+/// Created/managed by ADMIN only. Group membership extends the
+/// `same-owner` visibility rule (see lib/onepage-access.ts) — anyone
+/// in any shared group can read + edit; only the OnePage's owner or
+/// an admin may delete it.
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     GroupMembership[]
+}
+
+model GroupMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  // A user is in a group at most once.
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model OnePage {
+  id          String    @id @default(cuid())
+  title       String
+  ownerId     String
+  // snapshot ของ version ล่าสุด (JSON string ของ OnePageData)
+  data        String
+  thumbnail   String?
+  // Author + timestamp of the most recent edit. Distinct from `owner` so
+  // a group member's edit is visible in the list view ("แก้ไขล่าสุดโดย ...")
+  // even though they don't own the row. Falls back to `ownerId` /
+  // `updatedAt` when never edited externally.
+  lastEditedById String?
+  lastEditedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner         User    @relation("OwnedOnePages", fields: [ownerId], references: [id], onDelete: Cascade)
+  // SetNull on delete so the audit trail doesn't disappear if the editor
+  // is later deleted from the system — the OnePage still survives.
+  lastEditedBy  User?   @relation("LastEditedOnePages", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  versions      OnePageVersion[]
+
+  @@index([ownerId])
+  // ใช้กับ ORDER BY updatedAt DESC ในหน้า list — pagination เร็วขึ้นเมื่อมี 500+ rows
+  @@index([updatedAt])
+  @@index([ownerId, updatedAt])
+  @@index([title])
+}
+
+model OnePageVersion {
+  id          String   @id @default(cuid())
+  onepageId   String
+  authorId    String
+  data        String   // JSON snapshot
+  note        String?
+  createdAt   DateTime @default(now())
+
+  onepage     OnePage  @relation(fields: [onepageId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([onepageId])
+  @@index([createdAt])
+}
+
+/// Reusable starting points for new onepages — lets a user save a curated
+/// header (agency name, logos, slogan, colours, typography) once and spawn
+/// new onepages from it instead of filling the same fields every time.
+///
+/// `data` is the same JSON shape as `OnePage.data` (validated by
+/// onepageDataSchema). `type` mirrors data.type and is denormalized for
+/// indexed filtering ("show me only report templates").
+///
+/// `isSystem` templates are visible to every user. They're created/edited
+/// only by ADMIN; regular users get an extra slot to start a new onepage
+/// without overwriting their own personal templates.
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  /// "plan" | "report" — discriminator from OnePageData
+  type        String
+  /// JSON snapshot of OnePageData
+  data        String
+  /// Shared across all users when true (admin-managed defaults).
+  isSystem    Boolean  @default(false)
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([type])
+  @@index([isSystem])
+  // Hot path: "show me my templates of type X, newest first".
+  @@index([ownerId, type, updatedAt])
+}
+
+/// Tamper-evident audit trail for security-relevant actions.
+/// Events are append-only — the app never updates or deletes rows here.
+/// Keep this table queryable independently of the User table so that
+/// deleting a user does not wipe the trail (hence `actorId` is a plain
+/// string, no FK / no cascade).
+model AuditLog {
+  id          String   @id @default(cuid())
+  /// Stable event code, e.g. "user.create", "user.delete", "user.update",
+  /// "auth.login.success", "auth.login.failure", "onepage.delete".
+  event       String
+  /// User who performed the action (nullable for anonymous events like
+  /// login attempts where the user may not exist).
+  actorId     String?
+  actorEmail  String?
+  /// Subject of the action — usually the resource id (target user, onepage, …).
+  targetId    String?
+  /// Free-form JSON for whatever extra context the call site wants to record.
+  /// Stored as a string because SQLite has no JSON column type.
+  metadata    String?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([event])
+  @@index([actorId])
+  @@index([createdAt])
+}

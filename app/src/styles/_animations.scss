@@ -1,0 +1,26 @@
+@use "variables" as *;
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.anim-fade-in    { animation: fade-in $transition-base both; }
+.anim-slide-up   { animation: slide-up $transition-base both; }
+.anim-slide-down { animation: slide-down $transition-base both; }
+.anim-scale-in   { animation: scale-in $transition-fast both; }
