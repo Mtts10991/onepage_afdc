@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>One Page Template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --header-blue: #1e3a7a;
+    --header-blue-dark: #14245a;
+    --header-blue-light: #2952a3;
+    --border: #1e3a7a;
+    --ink: #111418;
+    --muted: #6b7280;
+    --paper: #ffffff;
+    --placeholder-bg: #eef1f6;
+    --placeholder-stripe: #e3e8ef;
+    --placeholder-ink: #6b7280;
+    --page-w: 794px;
+    --page-h: 1123px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #d9dde4;
+    font-family: "Sarabun", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+
+  .page {
+    width: var(--page-w);
+    min-height: var(--page-h);
+    background: var(--paper);
+    box-shadow: 0 12px 40px rgba(20, 36, 90, 0.18);
+    padding: 18px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ===== Header banner ===== */
+  .header {
+    position: relative;
+    background: transparent;
+    border: 2px solid var(--header-blue);
+    border-radius: 4px;
+    padding: 14px 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 110px;
+    color: var(--header-blue-dark);
+    overflow: hidden;
+  }
+
+  .header-logo {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--header-blue);
+    color: var(--header-blue-dark);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .header-logo.left  { left: 12px; }
+  .header-logo.right { right: 12px; }
+
+  .header-logo .ring {
+    position: absolute;
+    inset: 4px;
+    border: 1.5px dashed rgba(30, 58, 122, 0.45);
+    border-radius: 50%;
+  }
+  .header-logo span {
+    position: relative;
+    padding: 0 4px;
+  }
+
+  .header h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+  .header h2 {
+    margin: 4px 0 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .header .date {
+    margin-top: 8px;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--header-blue);
+    padding: 2px 14px;
+    border-top: 1px solid rgba(30,58,122,0.25);
+    border-bottom: 1px solid rgba(30,58,122,0.25);
+  }
+
+  /* ===== Photo grid (3 rows x 2 cols, each 4:3) ===== */
+  .photos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: auto;
+    gap: 8px;
+    border: 2px solid var(--header-blue);
+    border-radius: 4px;
+    padding: 8px;
+  }
+
+  .photo {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background:
+      repeating-linear-gradient(
+        135deg,
+        var(--placeholder-bg) 0 14px,
+        var(--placeholder-stripe) 14px 28px
+      );
+    border: 1px solid #cfd6e0;
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .photo .label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--placeholder-ink);
+    background: rgba(255,255,255,0.85);
+    padding: 6px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.04em;
+  }
+  .photo .num {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--placeholder-ink);
+    opacity: 0.7;
+  }
+
+  /* ===== Body caption ===== */
+  .caption {
+    font-size: 14px;
+    line-height: 1.55;
+    text-align: justify;
+    text-indent: 24px;
+    color: var(--ink);
+    padding: 0 2px;
+  }
+  .caption .lead {
+    font-weight: 600;
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 2px solid var(--header-blue);
+    border-radius: 4px;
+  }
+
+  .foot-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .foot-side.right { justify-content: flex-end; }
+
+  .brand-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brand-icon svg { display: block; width: 100%; height: 100%; }
+
+  .qr {
+    width: 52px;
+    height: 52px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    padding: 3px;
+  }
+  .qr svg { display: block; width: 100%; height: 100%; }
+
+  .slogan {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--header-blue-dark);
+  }
+  .slogan .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--header-blue);
+    border-radius: 50%;
+    margin: 0 12px;
+    transform: translateY(-4px);
+  }
+
+  /* ===== Decorative outer frame ===== */
+  .frame {
+    position: absolute;
+    inset: 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .frame::before,
+  .frame::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.5;
+  }
+  .frame::before { top: 4px; }
+  .frame::after  { bottom: 4px; }
+
+  /* corner ticks */
+  .corner {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--border);
+  }
+  .corner.tl { top: 2px; left: 2px; border-right: none; border-bottom: none; }
+  .corner.tr { top: 2px; right: 2px; border-left: none; border-bottom: none; }
+  .corner.bl { bottom: 2px; left: 2px; border-right: none; border-top: none; }
+  .corner.br { bottom: 2px; right: 2px; border-left: none; border-top: none; }
+
+  /* print */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="page" data-screen-label="01 One Page Template">
+
+    <!-- decorative frame -->
+    <div class="frame"></div>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <!-- HEADER BANNER -->
+    <header class="header" style="font-size: 20px">
+      <div class="header-logo left" aria-label="โลโก้หน่วยงาน (ซ้าย)">
+        <div class="ring"></div>
+        <span>LOGO<br>LEFT</span>
+      </div>
+
+      <h1 style="font-size: 20px">หน่วยบัญชาการทหารพัฒนา&nbsp;&nbsp;กองบัญชาการกองทัพไทย</h1>
+      <h2>โดย&nbsp;สำนักงานสนับสนุน&nbsp;หน่วยบัญชาการทหารพัฒนา</h2>
+      <div class="date">ประจำวันอังคารที่ 31 มีนาคม 2569</div>
+
+      <div class="header-logo right" aria-label="โลโก้หน่วยงาน (ขวา)">
+        <div class="ring"></div>
+        <span>LOGO<br>RIGHT</span>
+      </div>
+    </header>
+
+    <!-- PHOTO GRID 3 x 2 (4:3) -->
+    <section class="photos" aria-label="รูปภาพประกอบ" style="border-color: rgba(255, 255, 255, 0)">
+      <figure class="photo"><span class="num">01</span><span class="label">PHOTO &nbsp;·&nbsp; 4 : 3</span></figure>
+      <figure class="photo"><span class="num">02</span><span class="label">PHOTO &nbsp;·&nbsp; 4 : 3</span></figure>
+      <figure class="photo"><span class="num">03</span><span class="label">PHOTO &nbsp;·&nbsp; 4 : 3</span></figure>
+      <figure class="photo"><span class="num">04</span><span class="label">PHOTO &nbsp;·&nbsp; 4 : 3</span></figure>
+      <figure class="photo"><span class="num">05</span><span class="label">PHOTO &nbsp;·&nbsp; 4 : 3</span></figure>
+      <figure class="photo"><span class="num">06</span><span class="label">PHOTO &nbsp;·&nbsp; 4 : 3</span></figure>
+    </section>
+
+    <!-- BODY CAPTION -->
+    <p class="caption">
+      <span class="lead">เมื่อวันที่ 31 มี.ค. 69</span>
+      บก.ทท. (นทพ.) โดย ศบภ.สสน.นทพ. จัดชุดบรรเทาสาธารณภัยเคลื่อนที่เร็ว
+      รถตรวจการณ์อเนกประสงค์ รถดับเพลิงโฟมเคมี รถดับเพลิงอเนกประสงค์
+      รถบรรทุกน้ำ และรถพยาบาลฉุกเฉิน สนับสนุนการรับเสด็จฯ
+      และการถวายความปลอดภัย ประจำพื้นที่ปฏิบัติงาน
+      โดยได้ถวายความปลอดภัยอย่างสูงสุด ณ สนาม ฮ.กบ.อ.ผท.ทหาร
+      แขวงสีกัน เขตดอนเมือง กทม.
+    </p>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="foot-side left">
+      <!-- Chrome icon (left) -->
+      <div class="brand-icon" aria-label="Chrome">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="chRed" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#d93025"/>
+              <stop offset="1" stop-color="#ea4335"/>
+            </linearGradient>
+            <linearGradient id="chYellow" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#fcc934"/>
+              <stop offset="1" stop-color="#fbbc04"/>
+            </linearGradient>
+            <linearGradient id="chGreen" x1="1" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#1e8e3e"/>
+              <stop offset="1" stop-color="#34a853"/>
+            </linearGradient>
+          </defs>
+          <!-- outer circle -->
+          <circle cx="24" cy="24" r="22" fill="#fff"/>
+          <!-- red top wedge -->
+          <path d="M24 2 A22 22 0 0 1 43.05 13 L29.2 21 A6 6 0 0 0 18.8 21 L7.1 13.5 A22 22 0 0 1 24 2 Z" fill="url(#chRed)"/>
+          <!-- yellow bottom-right -->
+          <path d="M43.05 13 A22 22 0 0 1 29 45.3 L24 30 A6 6 0 0 0 29.2 21 Z" fill="url(#chYellow)"/>
+          <!-- green bottom-left -->
+          <path d="M29 45.3 A22 22 0 0 1 7.1 13.5 L18.8 21 A6 6 0 0 0 24 30 Z" fill="url(#chGreen)"/>
+          <!-- blue center -->
+          <circle cx="24" cy="24" r="9" fill="#fff"/>
+          <circle cx="24" cy="24" r="7.5" fill="#1a73e8"/>
+        </svg>
+      </div>
+      <!-- Left QR (placeholder) -->
+      <div class="qr" aria-label="QR ซ้าย">
+        <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect width="21" height="21" fill="#fff"/>
+          <g fill="#111"><rect x="0" y="0" width="7" height="7"/><rect x="14" y="0" width="7" height="7"/><rect x="0" y="14" width="7" height="7"/></g>
+          <g fill="#fff"><rect x="1" y="1" width="5" height="5"/><rect x="15" y="1" width="5" height="5"/><rect x="1" y="15" width="5" height="5"/></g>
+          <g fill="#111"><rect x="2" y="2" width="3" height="3"/><rect x="16" y="2" width="3" height="3"/><rect x="2" y="16" width="3" height="3"/></g>
+          <g fill="#111">
+            <rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/>
+            <rect x="8" y="2" width="1" height="1"/><rect x="10" y="2" width="1" height="1"/><rect x="12" y="2" width="1" height="1"/>
+            <rect x="9" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/>
+            <rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/>
+            <rect x="0" y="8" width="1" height="1"/><rect x="2" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="11" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="15" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="19" y="8" width="1" height="1"/>
+            <rect x="1" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="14" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="20" y="10" width="1" height="1"/>
+            <rect x="0" y="12" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="16" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/>
+            <rect x="9" y="14" width="1" height="1"/><rect x="11" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="17" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/>
+            <rect x="8" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="18" y="16" width="1" height="1"/>
+            <rect x="9" y="18" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/>
+            <rect x="8" y="20" width="1" height="1"/><rect x="11" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="19" y="20" width="1" height="1"/>
+          </g>
+        </svg>
+      </div>
+      </div>
+
+      <div class="slogan">
+        เทิดราชัน<span class="dot"></span>ทันสมัย<span class="dot"></span>พัฒนา
+      </div>
+
+      <div class="foot-side right">
+      <!-- Right QR (placeholder) -->
+      <div class="qr" aria-label="QR ขวา">
+        <svg viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect width="21" height="21" fill="#fff"/>
+          <g fill="#111"><rect x="0" y="0" width="7" height="7"/><rect x="14" y="0" width="7" height="7"/><rect x="0" y="14" width="7" height="7"/></g>
+          <g fill="#fff"><rect x="1" y="1" width="5" height="5"/><rect x="15" y="1" width="5" height="5"/><rect x="1" y="15" width="5" height="5"/></g>
+          <g fill="#111"><rect x="2" y="2" width="3" height="3"/><rect x="16" y="2" width="3" height="3"/><rect x="2" y="16" width="3" height="3"/></g>
+          <g fill="#111">
+            <rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="12" y="0" width="1" height="1"/>
+            <rect x="9" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/>
+            <rect x="8" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/>
+            <rect x="9" y="6" width="1" height="1"/><rect x="11" y="6" width="1" height="1"/><rect x="13" y="6" width="1" height="1"/>
+            <rect x="1" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="18" y="8" width="1" height="1"/>
+            <rect x="0" y="10" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="13" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/>
+            <rect x="1" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="11" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/>
+            <rect x="8" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="12" y="14" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/>
+            <rect x="9" y="16" width="1" height="1"/><rect x="11" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/>
+            <rect x="8" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="18" y="18" width="1" height="1"/>
+            <rect x="9" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/>
+          </g>
+        </svg>
+      </div>
+      <!-- Facebook icon (right) -->
+      <div class="brand-icon" aria-label="Facebook">
+        <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" fill="#1877f2"/>
+          <path d="M27.5 46V28.4h5.9l.9-6.9h-6.8v-4.4c0-2 .55-3.36 3.4-3.36h3.65V7.5c-.63-.08-2.8-.27-5.32-.27-5.27 0-8.88 3.22-8.88 9.12v5.14H14.4v6.9h5.95V46h7.15Z" fill="#fff"/>
+        </svg>
+      </div>
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>

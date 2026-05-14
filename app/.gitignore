@@ -1,0 +1,23 @@
+node_modules
+.next
+out
+build
+*.log
+.DS_Store
+
+# env
+.env
+.env.local
+.env.*.local
+
+# db
+prisma/*.db
+prisma/*.db-journal
+
+# uploads (เก็บโครงไว้ ไม่ commit ของจริง)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# IDE
+.vscode
+.idea

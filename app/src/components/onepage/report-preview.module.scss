@@ -1,0 +1,270 @@
+@use "../../styles/variables" as *;
+
+// design tokens (ตาม One Page Template.html) — สีหลัก override ผ่าน inline style จาก React
+.page {
+  --header-blue: #1e3a7a;
+  --header-blue-dark: #14245a;
+  --header-blue-light: #2952a3;
+  --border: #1e3a7a;
+  --ink: #111418;
+  --muted: #6b7280;
+  --paper: #ffffff;
+  --placeholder-bg: #eef1f6;
+  --placeholder-stripe: #e3e8ef;
+  --placeholder-ink: #6b7280;
+
+  width: 794px;
+  min-height: 1123px;
+  background: var(--paper);
+  box-shadow: 0 12px 40px rgba(20, 36, 90, 0.18);
+  padding: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--ink);
+  font-family: $font-thai-sarabun;
+
+  *, *::before, *::after { box-sizing: border-box; }
+}
+
+// ========== HEADER ==========
+.header {
+  position: relative;
+  background: transparent;
+  border: 2px solid var(--header-blue);
+  border-radius: 12px;
+  padding: 14px 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 110px;
+  color: var(--header-blue-dark);
+  overflow: hidden;
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+  }
+  h2 {
+    margin: 4px 0 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+}
+
+.headerLogo {
+  // Fixed *height* keeps both logos visually balanced on the same baseline,
+  // but width is left flexible (`max-width` only) so a non-square crop —
+  // e.g. the "อิสระ" / free-aspect crop — isn't squashed into a 1:1 box.
+  // Result: a tall narrow crop and a wide short crop both display at full
+  // height without the image being clipped or letter-boxed.
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 92px;
+  max-width: 140px;       // safety bound so an extremely wide crop can't
+                          // overlap the agency-name text in the centre
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--header-blue-dark);
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.15;
+
+  img {
+    // `height: 100%` locks logos to the same vertical span; `width: auto`
+    // preserves the user's crop ratio. `object-fit: contain` is a no-op
+    // here (we no longer constrain both dimensions) but kept defensively.
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  span {
+    position: relative;
+    z-index: 1;
+    padding: 0 4px;
+  }
+}
+.left  { left: 12px; }
+.right { right: 12px; }
+
+// ring ถูกซ่อนไว้ (เก็บ class ไว้เผื่อ DOM อ้างถึง แต่ไม่มี visual)
+.ring {
+  display: none;
+}
+
+.date {
+  margin-top: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--date-color);
+  padding: 2px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--date-color) 35%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--date-color) 35%, transparent);
+}
+
+// ========== PHOTO GRID (2 cols × 3 rows, 4:3) ==========
+.photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: auto;
+  gap: 8px;
+  padding: 0;
+}
+
+.photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--placeholder-bg) 0 14px,
+    var(--placeholder-stripe) 14px 28px
+  );
+  border: 1px solid #cfd6e0;
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.photoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.label {
+  font-family: "JetBrains Mono", "Courier New", monospace;
+  font-size: 11px;
+  color: var(--placeholder-ink);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 10px;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
+// ========== CAPTION (Tiptap HTML) ==========
+.caption {
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: justify;
+  // Use Word-like inter-word justification — stretches the space *between*
+  // words only, not within them, and pairs cleanly with `white-space: normal`
+  // below (consecutive spaces collapse so justify doesn't blow them up).
+  text-justify: inter-word;
+  word-spacing: normal;
+  color: var(--ink);
+  padding: 0;
+  white-space: normal;
+
+  & > p { margin: 0 0 0.45em 0; }
+  & > p:first-child::first-letter,
+  & strong:first-child {
+    font-weight: 600;
+  }
+  h1 { font-size: 18px; font-weight: 700; margin: 0.4em 0 0.25em; }
+  h2 { font-size: 16px; font-weight: 700; margin: 0.35em 0 0.2em; }
+  h3 { font-size: 15px; font-weight: 600; margin: 0.3em 0 0.18em; }
+  ul { list-style: disc; padding-left: 1.4rem; margin: 0.3em 0; text-align: left; }
+  ol { list-style: decimal; padding-left: 1.4rem; margin: 0.3em 0; text-align: left; }
+  blockquote {
+    border-left: 3px solid var(--header-blue);
+    padding-left: 0.75rem;
+    color: var(--muted);
+    margin: 0.4em 0;
+    text-align: left;
+  }
+  a { color: var(--header-blue); text-decoration: underline; }
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+  // inline font-size จาก Tiptap (<span style="font-size: ...">)
+  span[style*="font-size"] { line-height: inherit; }
+}
+
+// ========== FOOTER ==========
+.footer {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  background: transparent;
+  border: 2px solid var(--header-blue);
+  border-radius: 12px;
+}
+
+.footSide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.footRight { justify-content: flex-end; }
+
+.brandIcon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.qr {
+  width: 52px;
+  height: 52px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  padding: 3px;
+
+  img, svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.slogan {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--header-blue-dark);
+
+  // dots between segments
+  > span + span { margin-left: 0; }
+}
+
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--header-blue);
+  border-radius: 50%;
+  margin: 0 12px;
+  transform: translateY(-4px);
+}

@@ -1,0 +1,195 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ============ Font Sarabun (local, ไม่ใช้ CDN) ============ */
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-Thin.ttf") format("truetype");            font-weight: 100; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-ThinItalic.ttf") format("truetype");      font-weight: 100; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-ExtraLight.ttf") format("truetype");      font-weight: 200; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-ExtraLightItalic.ttf") format("truetype"); font-weight: 200; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-Light.ttf") format("truetype");           font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-LightItalic.ttf") format("truetype");     font-weight: 300; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-Regular.ttf") format("truetype");         font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-Italic.ttf") format("truetype");          font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-Medium.ttf") format("truetype");          font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-MediumItalic.ttf") format("truetype");    font-weight: 500; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-SemiBold.ttf") format("truetype");        font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-SemiBoldItalic.ttf") format("truetype");  font-weight: 600; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-Bold.ttf") format("truetype");            font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-BoldItalic.ttf") format("truetype");      font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-ExtraBold.ttf") format("truetype");       font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "Sarabun"; src: url("/fonts/Sarabun-ExtraBoldItalic.ttf") format("truetype"); font-weight: 800; font-style: italic; font-display: swap; }
+
+/* ============ Theme tokens (shadcn-compatible, HSL) ============ */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+  --sidebar-bg: 0 0% 100%;
+  --sidebar-fg: 222.2 84% 4.9%;
+  --header-bg: 0 0% 100%;
+  --font-body: "Sarabun", "TH Sarabun New", "Noto Sans Thai", system-ui, sans-serif;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 6%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 6%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 40%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+  --sidebar-bg: 222.2 84% 6%;
+  --sidebar-fg: 210 40% 98%;
+  --header-bg: 222.2 84% 6%;
+}
+
+/* ============ Tailwind 4 theme ============ */
+@theme inline {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --font-sans: "Sarabun", "TH Sarabun New", system-ui, sans-serif;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html, body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============ Tiptap ============ */
+.tiptap {
+  font-family: "Sarabun", "TH Sarabun New", system-ui, sans-serif;
+  /*
+   * White-space handling mirrors Word/LibreOffice: consecutive spaces
+   * collapse to one, and line breaks within a paragraph wrap naturally.
+   * Combined with `text-align: justify`, this avoids the huge gaps that
+   * `pre-wrap` produces when the justify algorithm tries to stretch
+   * every preserved space (including duplicates) to fill the line.
+   *
+   * `text-justify: inter-word` tells the browser to expand the gaps
+   * *between* words only — not within them — which matches Thai/Word
+   * behaviour better than the default `auto`.
+   */
+  white-space: normal;
+  text-justify: inter-word;
+  /* Avoid pulling words apart so far that the line looks ragged. */
+  word-spacing: normal;
+}
+.tiptap p { margin: 0 0 0.45em 0; }
+.tiptap h1 { font-size: 18px; font-weight: 700; margin: 0.5em 0 0.3em; text-indent: 0; }
+.tiptap h2 { font-size: 16px; font-weight: 700; margin: 0.4em 0 0.25em; text-indent: 0; }
+.tiptap h3 { font-size: 15px; font-weight: 600; margin: 0.35em 0 0.2em; text-indent: 0; }
+.tiptap ul { list-style: disc; padding-left: 1.4rem; margin: 0.3em 0; text-align: left; }
+.tiptap ol { list-style: decimal; padding-left: 1.4rem; margin: 0.3em 0; text-align: left; }
+.tiptap li > p { margin: 0; text-indent: 0; }
+.tiptap blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0.4em 0;
+  text-align: left;
+  text-indent: 0;
+}
+.tiptap a { color: hsl(var(--primary)); text-decoration: underline; }
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+  height: 0;
+}
+
+/* ============ Animations ============ */
+@keyframes fade-in { from {opacity:0} to {opacity:1} }
+@keyframes slide-up { from {opacity:0; transform: translateY(8px)} to {opacity:1; transform:none} }
+@keyframes slide-down { from {opacity:0; transform: translateY(-8px)} to {opacity:1; transform:none} }
+@keyframes scale-in { from {opacity:0; transform: scale(.96)} to {opacity:1; transform: none} }
+.anim-fade-in { animation: fade-in 250ms ease both; }
+.anim-slide-up { animation: slide-up 250ms ease both; }
+.anim-slide-down { animation: slide-down 250ms ease both; }
+.anim-scale-in { animation: scale-in 150ms ease both; }
+
+/* ============ Reduced motion (WCAG 2.3.3) ============ *
+ * Honour the OS-level "Reduce motion" preference: kill custom keyframe
+ * entrance animations entirely and clamp every transition/animation
+ * duration to a single tick so users prone to motion-sickness aren't
+ * flashed at on every page navigation or hover.
+ *
+ * Tailwind utilities (`transition-*`, `animate-*`) and Radix's
+ * data-state animations all flow through `animation-duration` and
+ * `transition-duration`, so this catches them too.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-in,
+  .anim-slide-up,
+  .anim-slide-down,
+  .anim-scale-in {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
