@@ -1,0 +1,76 @@
+{
+  "$schema": "./template.schema.json",
+  "_comment": "Copy this file to baseline/YYYY-MM-DD.json on day 15 of the pilot, fill in the values from /admin/metrics?days=14, and commit. PRD owner signs off in PR. Replace ALL `null` / `TBD` values; do not invent numbers. Sections that read placeholder in the dashboard (LINE adoption if the OA wasn't published yet) should stay null with a note in `notes`.",
+
+  "windowFrom": "TBD",
+  "windowTo": "TBD",
+  "deployTag": "TBD",
+  "pilotUnit": {
+    "name": "TBD",
+    "size": null
+  },
+
+  "metrics": {
+    "formErrorRate": {
+      "rate": null,
+      "validationFailures": null,
+      "fixups": null,
+      "denominator": null,
+      "_source": "/admin/metrics → 'อัตราข้อผิดพลาดในการกรอก' card"
+    },
+    "timeToCompleteSec": {
+      "p50": null,
+      "p90": null,
+      "count": null,
+      "_source": "/admin/metrics → 'เวลาเฉลี่ยจนเสร็จ' card"
+    },
+    "supportTickets": {
+      "total": null,
+      "byCategory": {
+        "login": null,
+        "format": null,
+        "export": null,
+        "mobile": null,
+        "other": null
+      },
+      "_source": "/admin/metrics → 'ตั๋ว support ที่บันทึก' card"
+    },
+    "exportFailureRate": {
+      "rate": null,
+      "totalSuccess": null,
+      "totalFailure": null,
+      "byFormat": {
+        "pptx": { "success": null, "failure": null },
+        "png": { "success": null, "failure": null }
+      },
+      "_source": "/admin/metrics → 'อัตรา export ล้มเหลว' card"
+    },
+    "lineLoginAdoption": {
+      "linePercent": null,
+      "line": null,
+      "credentials": null,
+      "total": null,
+      "_source": "/admin/metrics → 'การใช้ LINE Login' card"
+    },
+    "lineNotifyOptIn": {
+      "percent": null,
+      "optedIn": null,
+      "total": null,
+      "_source": "/admin/metrics → 'ผู้รับแจ้งเตือน LINE' card"
+    },
+    "mobileCompletionRate": {
+      "rate": null,
+      "completed": null,
+      "sessions": null,
+      "_source": "/admin/metrics → 'อัตราทำงานบนมือถือสำเร็จ' card"
+    },
+    "publishesDaily": {
+      "totalInWindow": null,
+      "_source": "/admin/metrics → 'Publish ต่อวัน' card (sum across window)"
+    }
+  },
+
+  "signedOffBy": null,
+  "signedOffAt": null,
+  "notes": "Free-form caveats. Examples: 'Day 4 had a 2-hour outage from the auth provider', 'Email permission for LINE was approved on day 6 so adoption only had 8 days to grow', 'Mobile completion rate dragged down by old iPad fleet that doesn't run modern Safari'."
+}
