@@ -32,6 +32,7 @@ export function ExportButtons({ id, title }: { id: string; title: string }) {
   function exportPng() {
     start(async () => {
       const toastId = toast.loading(t("creatingPng"));
+      const startedAt = performance.now();
       try {
         const node = document.getElementById("onepage-canvas") as HTMLElement | null;
         if (!node) throw new Error("canvas not found");
@@ -68,6 +69,19 @@ export function ExportButtons({ id, title }: { id: string; title: string }) {
           )
         );
 
+        // === Step 1.5/3 — pre-warm web fonts ===
+        // Without this, `html-to-image` can capture the canvas before
+        // Sarabun finishes loading, and the PNG drops back to the
+        // system sans-serif while the user is still looking at Sarabun
+        // on-screen — a confusing fidelity gap. We cap the wait so a
+        // dead font server doesn't block exports forever.
+        if (typeof document !== "undefined" && (document as any).fonts?.ready) {
+          await Promise.race([
+            (document as any).fonts.ready as Promise<void>,
+            new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+          ]);
+        }
+
         // === Step 2/3 — render to canvas ===
         toast.loading(t("rendering"), { id: toastId, description: "66%" });
         const htmlToImage = await import("html-to-image");
@@ -94,9 +108,33 @@ export function ExportButtons({ id, title }: { id: string; title: string }) {
         a.click();
 
         toast.success(t("exportPngSuccess"), { id: toastId, description: "100%" });
+        const durationMs = Math.round(performance.now() - startedAt);
+        fetch(`/api/onepages/${id}/beacon/export-png`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "success",
+            durationMs,
+            // dataUrl is "data:image/png;base64,XXXX" — base64 payload is
+            // ~4/3 of the raw byte count, close enough for instrumentation.
+            bytes: Math.round((dataUrl.length - "data:image/png;base64,".length) * 0.75),
+          }),
+          keepalive: true,
+        }).catch(() => {});
       } catch (e) {
         console.error("[export-png]", e);
         toast.error(t("saveError") + ": " + formatErr(e), { id: toastId });
+        const durationMs = Math.round(performance.now() - startedAt);
+        fetch(`/api/onepages/${id}/beacon/export-png`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "failure",
+            durationMs,
+            errorMessage: formatErr(e).slice(0, 500),
+          }),
+          keepalive: true,
+        }).catch(() => {});
       }
     });
   }

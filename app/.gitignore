@@ -5,6 +5,9 @@ build
 *.log
 .DS_Store
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # env
 .env
 .env.local

@@ -24,6 +24,28 @@ model User {
   avatarUrl     String?
   role          String    @default("USER")  // "ADMIN" | "USER"
   isActive      Boolean   @default(true)
+  // Account lifecycle. New self-serve LINE registrations land as
+  // "PENDING" — they can sign in but middleware bounces them to
+  // /pending-approval until an admin moves them to "ACTIVE". "REJECTED"
+  // is a brief terminal state immediately before deletion (we keep the
+  // enum value so audit rows from the moment of rejection remain
+  // interpretable). All existing rows backfill to "ACTIVE" via the
+  // default and the seed sets the bootstrap admin explicitly.
+  status        String    @default("ACTIVE")
+  // How this user first entered the system. Mirrored from the registration
+  // event so the admin "Pending users" page can show "via LINE" / "by admin"
+  // without joining back to AuditLog. Values: "line" | "credentials" |
+  // "admin_created" | "seed". Existing rows backfill to "admin_created"
+  // via the default — only the bootstrap admin gets "seed" via the seeder
+  // and only the LINE registration path sets "line".
+  registrationSource String  @default("admin_created")
+  // LINE Messaging API target id — captured from the OA's `follow` webhook
+  // event after the user adds the bot as a friend. Distinct from the
+  // LINE Login `sub` we keep in Account.providerAccountId because the
+  // Messaging API and the Login API issue different user identifiers.
+  // Null when the user hasn't added the OA yet (the canonical opt-in
+  // signal — no separate boolean flag needed).
+  lineBotUserId String?   @unique
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

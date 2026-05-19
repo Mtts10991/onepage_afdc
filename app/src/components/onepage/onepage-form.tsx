@@ -87,6 +87,27 @@ export function OnePageForm({ value, onChange }: Props) {
             <Input value={value.timeline} onChange={(e) => set("timeline", e.target.value)} />
           </div>
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="plan-deadline">{t("deadline")}</Label>
+          {/* Native date picker — browser already enforces ISO-8601 so we
+              don't need a separate regex check here; the zod schema does
+              the final guarding on save. */}
+          <Input
+            id="plan-deadline"
+            type="date"
+            value={value.deadline ?? ""}
+            onChange={(e) =>
+              set("deadline", e.target.value === "" ? null : e.target.value)
+            }
+            aria-describedby="plan-deadline-hint"
+          />
+          <p
+            id="plan-deadline-hint"
+            className="text-xs text-muted-foreground"
+          >
+            {t("deadlineHint")}
+          </p>
+        </div>
       </CollapsibleCard>
 
       <CollapsibleCard

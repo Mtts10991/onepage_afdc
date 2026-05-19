@@ -16,8 +16,15 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnLogin = nextUrl.pathname.startsWith("/login");
+      const isOnPending = nextUrl.pathname.startsWith("/pending-approval");
+      const status = (auth?.user as { status?: string } | undefined)?.status;
       const isPublic =
         nextUrl.pathname.startsWith("/api/auth") ||
+        // LINE Messaging API webhook + Vercel/external cron — both
+        // authenticate via their own signed/bearer schemes, NOT the
+        // session cookie. They must be reachable unauthenticated.
+        nextUrl.pathname.startsWith("/api/line/webhook") ||
+        nextUrl.pathname.startsWith("/api/cron/") ||
         nextUrl.pathname.startsWith("/_next") ||
         nextUrl.pathname.startsWith("/fonts") ||
         nextUrl.pathname.startsWith("/uploads") ||
@@ -25,16 +32,31 @@ export const authConfig: NextAuthConfig = {
 
       if (isPublic) return true;
       if (isOnLogin) {
-        if (isLoggedIn)
-          return Response.redirect(new URL("/dashboard", nextUrl));
+        if (isLoggedIn) {
+          // PENDING users land on /pending-approval, not /dashboard —
+          // they have a session but no permission to use the app yet.
+          const dest = status === "PENDING" ? "/pending-approval" : "/dashboard";
+          return Response.redirect(new URL(dest, nextUrl));
+        }
         return true;
       }
-      return isLoggedIn;
+      if (!isLoggedIn) return false;
+      // Gate any route except /pending-approval itself for PENDING users.
+      // The page lets them log out and shows their queue status.
+      if (status === "PENDING" && !isOnPending) {
+        return Response.redirect(new URL("/pending-approval", nextUrl));
+      }
+      // ACTIVE users shouldn't keep seeing the waiting room.
+      if (status !== "PENDING" && isOnPending) {
+        return Response.redirect(new URL("/dashboard", nextUrl));
+      }
+      return true;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
         token.role = (user as any).role;
+        token.status = (user as any).status ?? "ACTIVE";
       }
       return token;
     },
@@ -42,6 +64,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).role = token.role as string;
+        (session.user as any).status = token.status as string;
       }
       return session;
     },

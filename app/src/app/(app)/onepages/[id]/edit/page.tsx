@@ -23,6 +23,7 @@ export default async function EditOnePagePage({
       id={op.id}
       initialTitle={op.title}
       initialData={parseOnePageData(op.data)}
+      initialServerUpdatedAt={op.updatedAt.toISOString()}
     />
   );
 }

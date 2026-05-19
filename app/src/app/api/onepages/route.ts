@@ -47,8 +47,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success)
+  if (!parsed.success) {
+    await audit("onepage.validation.failure", {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      metadata: {
+        route: "POST /api/onepages",
+        fieldPaths: Object.keys(parsed.error.flatten().fieldErrors),
+      },
+    });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
 
   const data = parsed.data.data ?? defaultPlanData;
   const dataJson = JSON.stringify(data);
@@ -56,6 +65,16 @@ export async function POST(req: NextRequest) {
   // Defence-in-depth size check after JSON serialization — zod limits the
   // *shape* but not the cumulative byte size.
   if (Buffer.byteLength(dataJson, "utf8") > MAX_DATA_JSON_BYTES) {
+    await audit("onepage.validation.failure", {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      metadata: {
+        route: "POST /api/onepages",
+        fieldPaths: ["data"],
+        reason: "data_too_large",
+        bytes: Buffer.byteLength(dataJson, "utf8"),
+      },
+    });
     return NextResponse.json({ error: "data_too_large" }, { status: 400 });
   }
 
@@ -82,7 +101,11 @@ export async function POST(req: NextRequest) {
     actorId: session.user.id,
     actorEmail: session.user.email,
     targetId: created.id,
-    metadata: { title: created.title, type: data.type },
+    metadata: {
+      title: created.title,
+      type: data.type,
+      bytes: Buffer.byteLength(dataJson, "utf8"),
+    },
   });
 
   return NextResponse.json(created);

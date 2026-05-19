@@ -41,7 +41,36 @@ export const onepagePlanDataSchema = z.object({
   outcome: z.string().default(""),
   imageUrl: z.string().nullable().default(null),
   accentColor: z.string().nullable().default(null),
+  // Optional ISO date (YYYY-MM-DD) — only set when the plan has a real
+  // due date. Surfaces a 24h-prior LINE reminder to the owner via the
+  // notify-deadlines cron. Report-type onepages don't carry a deadline
+  // because they describe past events.
+  //
+  // Validation: empty / null is fine (no deadline set). When set it must
+  // be parseable as a date; we DON'T enforce future-only here because
+  // historical plans being archived can have past deadlines legitimately.
+  deadline: z
+    .string()
+    .nullable()
+    .default(null)
+    .refine(
+      (v) => v === null || v === "" || isPlausibleIsoDate(v),
+      { message: "deadline_invalid_iso_date" },
+    ),
 });
+
+/**
+ * Loose ISO-8601 date check accepting `YYYY-MM-DD` (date input) and
+ * full datetime strings. Empty/null are accepted upstream — only call
+ * this when there's a real value to validate.
+ */
+function isPlausibleIsoDate(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(s)) {
+    return false;
+  }
+  const t = Date.parse(s);
+  return Number.isFinite(t);
+}
 
 // ---------- REPORT ----------
 // Typography overrides — narrowed to a sensible PT range so the layout
@@ -127,6 +156,7 @@ export const defaultPlanData: OnePagePlanData = {
   outcome: "",
   imageUrl: null,
   accentColor: null,
+  deadline: null,
 };
 
 /**

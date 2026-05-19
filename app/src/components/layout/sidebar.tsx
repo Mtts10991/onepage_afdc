@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import {
@@ -14,6 +15,8 @@ import {
   ShieldCheck,
   Bookmark,
   Network,
+  BarChart3,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -30,6 +33,34 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { data } = useSession();
   const isAdmin = data?.user?.role === "ADMIN";
 
+  // Pending-approval badge — surfaced on the admin "Pending users" nav
+  // link so admins notice new self-serve registrations without having
+  // to visit the page. Polled every 60s; revalidates instantly after
+  // an approve/reject action via router.refresh() from the row itself.
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/api/admin/pending-users/count", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { count?: number };
+        if (!cancelled) setPendingCount(json.count ?? 0);
+      } catch {
+        // ignore — we just stay on the previous value
+      }
+    };
+    void tick();
+    const id = setInterval(tick, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [isAdmin, pathname]);
+
   const items = [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
     { href: "/onepages", label: t("onepages"), icon: FileText },
@@ -38,8 +69,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     ...(isAdmin
       ? [
           { href: "/users", label: t("users"), icon: Users },
+          {
+            href: "/admin/pending-users",
+            label: t("pendingUsers"),
+            icon: UserPlus,
+            badge: pendingCount,
+          },
           { href: "/groups", label: t("groups"), icon: Network },
           { href: "/audit", label: t("audit"), icon: ShieldCheck },
+          { href: "/admin/metrics", label: t("metrics"), icon: BarChart3 },
         ]
       : []),
   ];
@@ -92,13 +130,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">
         <TooltipProvider delayDuration={0}>
-          {items.map(({ href, label, icon: Icon }) => {
+          {items.map((item) => {
+            const { href, label, icon: Icon } = item;
+            const badge: number = "badge" in item ? (item.badge ?? 0) : 0;
             const active = href === activeHref;
             const link = (
               <Link
                 href={href}
                 className={cn(
-                  "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer",
+                  "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium cursor-pointer",
                   "transition-all duration-150 ease-out active:scale-[0.98]",
                   active
                     ? "bg-primary text-primary-foreground shadow-sm"
@@ -106,8 +146,30 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   collapsed && "justify-center px-2"
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover:scale-110" />
-                {!collapsed && <span className="truncate">{label}</span>}
+                <span className="relative shrink-0">
+                  <Icon className="h-4 w-4 transition-transform duration-150 group-hover:scale-110" />
+                  {badge > 0 && collapsed && (
+                    <span
+                      className="absolute -top-1.5 -right-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"
+                      aria-label={`${badge}`}
+                    >
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </span>
+                {!collapsed && (
+                  <>
+                    <span className="truncate flex-1">{label}</span>
+                    {badge > 0 && (
+                      <span
+                        className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white"
+                        aria-label={`${badge}`}
+                      >
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
+                  </>
+                )}
               </Link>
             );
             return collapsed ? (

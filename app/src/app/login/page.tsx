@@ -2,6 +2,11 @@ import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { getTranslations } from "next-intl/server";
 
+// Server-side LINE availability check — the LINE button is only rendered
+// when the channel is actually configured, so unconfigured environments
+// (most dev setups) don't show a button that 500s on click.
+const LINE_ENABLED = Boolean(process.env.AUTH_LINE_ID && process.env.AUTH_LINE_SECRET);
+
 export default async function LoginPage() {
   const t = await getTranslations();
   return (
@@ -15,7 +20,7 @@ export default async function LoginPage() {
           <p className="text-sm text-muted-foreground">{t("app.subtitle")}</p>
         </div>
         <Suspense fallback={null}>
-          <LoginForm />
+          <LoginForm lineEnabled={LINE_ENABLED} />
         </Suspense>
       </div>
     </main>

@@ -50,8 +50,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success)
+  if (!parsed.success) {
+    await audit("user.validation.failure", {
+      actorId: g.session?.user.id,
+      actorEmail: g.session?.user.email,
+      metadata: {
+        route: "POST /api/users",
+        fieldPaths: Object.keys(parsed.error.flatten().fieldErrors),
+      },
+    });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
 
   const exists = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (exists) return NextResponse.json({ error: "duplicate" }, { status: 409 });
@@ -64,6 +73,7 @@ export async function POST(req: NextRequest) {
       title: parsed.data.title,
       phone: parsed.data.phone,
       role: parsed.data.role,
+      registrationSource: "admin_created",
     },
     select: { id: true, email: true },
   });

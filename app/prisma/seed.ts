@@ -25,6 +25,7 @@ async function main() {
       role: "ADMIN",
       isActive: true,
       title: "ผู้ดูแลระบบ",
+      registrationSource: "seed",
     },
   });
 

@@ -17,8 +17,17 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const parsed = schema.safeParse(body);
-  if (!parsed.success)
+  if (!parsed.success) {
+    await audit("profile.validation.failure", {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      metadata: {
+        route: "POST /api/profile/password",
+        fieldPaths: Object.keys(parsed.error.flatten().fieldErrors),
+      },
+    });
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
 
   const u = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!u) return NextResponse.json({ error: "notfound" }, { status: 404 });

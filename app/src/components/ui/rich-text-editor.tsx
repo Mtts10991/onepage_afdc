@@ -122,7 +122,11 @@ export function RichTextEditor({
 
   return (
     <div className={cn("rounded-md border bg-background overflow-hidden", className)}>
-      <Toolbar editor={editor} />
+      {/* The toolbar gets sticky on mobile so it doesn't scroll off as the
+          user types — they always have formatting controls reachable. */}
+      <div className="sticky top-0 z-10 bg-background border-b">
+        <Toolbar editor={editor} />
+      </div>
       <div className="overflow-x-auto">
         <EditorContent editor={editor} />
       </div>
@@ -204,7 +208,18 @@ function Toolbar({ editor }: { editor: Editor }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/30 p-1">
+    // Horizontal scroll instead of wrapping: a 30-button toolbar wraps
+    // into 3-4 rows on a 360px phone, eating most of the screen before
+    // the editor content even renders. Single-row scroll keeps the
+    // editor surface visible and matches how iOS / Android keyboards
+    // expose their own formatting bars.
+    <div
+      className={cn(
+        "flex items-center gap-0.5 bg-muted/30 p-1",
+        // wrap freely on >=sm, scroll horizontally below
+        "flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible",
+      )}
+    >
       <Button size="icon" variant="ghost" className={btn(editor.isActive("heading", { level: 1 }))}
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} type="button" title="H1">
         <Heading1 className="h-4 w-4" />
@@ -284,7 +299,7 @@ function Toolbar({ editor }: { editor: Editor }) {
           <ArrowLeftToLine className="h-3.5 w-3.5" />
         </Button>
         <span
-          className="tabular-nums text-[10px] text-muted-foreground w-7 text-center select-none"
+          className="tabular-nums text-[10px] text-muted-foreground w-7 text-center select-none hidden sm:inline-block"
           aria-live="polite"
         >
           {currentLetterSpacing ? currentLetterSpacing.replace("px", "") : "0"}
@@ -388,5 +403,7 @@ function Toolbar({ editor }: { editor: Editor }) {
 }
 
 function Divider() {
-  return <span className="mx-1 h-5 w-px bg-border" />;
+  // Hide visual dividers on narrow viewports — they're cosmetic and
+  // stealing 5px each adds up across 6 dividers in a single-row scroll.
+  return <span className="mx-1 h-5 w-px bg-border hidden sm:inline-block" />;
 }

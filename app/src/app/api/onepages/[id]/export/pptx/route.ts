@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { audit } from "@/lib/audit";
+import { notifyOnePagePublished } from "@/lib/notify";
 import { canAccessOnePage } from "@/lib/onepage-access";
 import { parseOnePageData } from "@/lib/onepage-schema";
 import { exportOnePagePptx } from "@/lib/export-pptx";
@@ -17,8 +19,53 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const data = parseOnePageData(op.data);
-  const buf = await exportOnePagePptx(op.title, data);
+  const startedAt = performance.now();
+  let buf: Buffer;
+  try {
+    const data = parseOnePageData(op.data);
+    buf = await exportOnePagePptx(op.title, data);
+  } catch (err) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    await audit("onepage.export.failure", {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      targetId: id,
+      metadata: {
+        format: "pptx",
+        durationMs,
+        errorMessage: err instanceof Error ? err.message : String(err),
+      },
+    });
+    return NextResponse.json({ error: "export_failed" }, { status: 500 });
+  }
+
+  const durationMs = Math.round(performance.now() - startedAt);
+  await audit("onepage.export.success", {
+    actorId: session.user.id,
+    actorEmail: session.user.email,
+    targetId: id,
+    metadata: { format: "pptx", durationMs, bytes: buf.byteLength },
+  });
+
+  // Synthesize a single "publish" event the first time a onepage produces
+  // any export output — used as the canonical end-of-edit timestamp for the
+  // time-to-complete metric. We accept the cheap extra read here since
+  // exports are infrequent and the AuditLog is indexed on (event, ...).
+  const priorPublish = await prisma.auditLog.findFirst({
+    where: { event: "onepage.publish", targetId: id },
+    select: { id: true },
+  });
+  if (!priorPublish) {
+    await audit("onepage.publish", {
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      targetId: id,
+      metadata: { firstFormat: "pptx" },
+    });
+    // Notify the owner that their doc was just published — but only for
+    // cross-actor publishes (skip when the owner publishes themselves).
+    await notifyOnePagePublished(id, session.user.id);
+  }
 
   // Node 22's `Buffer` typings (and Uint8Array under @types/node 22) don't
   // match the strict WHATWG `BodyInit` lib type that Next pulls in via

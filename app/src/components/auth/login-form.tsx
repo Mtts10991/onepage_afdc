@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -11,7 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
 
-export function LoginForm() {
+interface LoginFormProps {
+  /** Whether LINE Login is configured (AUTH_LINE_ID present on server). */
+  lineEnabled: boolean;
+}
+
+export function LoginForm({ lineEnabled }: LoginFormProps) {
   const t = useTranslations();
   const router = useRouter();
   const params = useSearchParams();
@@ -22,6 +27,24 @@ export function LoginForm() {
   // Toasts alone aren't reliable for critical form feedback because they
   // auto-dismiss and live in a region many assistive techs don't poll.
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Surface LINE OAuth rejections that the server-side `signIn` callback
+  // redirected here with (e.g. `?error=line_no_matching_user`). NextAuth
+  // already filters its own `?error=` codes, so we only react to the
+  // `line_*` prefix we emit ourselves.
+  useEffect(() => {
+    const err = params.get("error");
+    if (!err) return;
+    if (err.startsWith("line_no_matching_user")) {
+      setErrorMsg(t("auth.lineErrorNoUser"));
+    } else if (err.startsWith("line_no_email_no_link")) {
+      setErrorMsg(t("auth.lineErrorNoEmail"));
+    } else if (err.startsWith("line_inactive")) {
+      setErrorMsg(t("auth.lineErrorInactive"));
+    } else if (err.startsWith("line_")) {
+      setErrorMsg(t("auth.lineErrorGeneric"));
+    }
+  }, [params, t]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -118,6 +141,33 @@ export function LoginForm() {
               </>
             )}
           </Button>
+
+          {lineEnabled && (
+            <>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex-1 border-t" aria-hidden="true" />
+                <span>{t("auth.or")}</span>
+                <span className="flex-1 border-t" aria-hidden="true" />
+              </div>
+              <Button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  startTransition(async () => {
+                    await signIn("line", {
+                      callbackUrl: params.get("callbackUrl") ?? "/dashboard",
+                    });
+                  });
+                }}
+                className="w-full bg-[#06C755] hover:bg-[#05b04b] text-white"
+              >
+                {t("auth.lineLogin")}
+              </Button>
+              <p className="text-[11px] text-muted-foreground text-center">
+                {t("auth.lineLoginNote")}
+              </p>
+            </>
+          )}
         </form>
       </CardContent>
     </Card>

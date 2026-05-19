@@ -7,6 +7,7 @@ import type {
   OnePageReportData,
 } from "./onepage-schema";
 import { sanitizeRichHtml } from "./sanitize-html";
+import { htmlToTextRuns } from "./tiptap-to-pptx";
 
 export async function exportOnePagePptx(
   title: string,
@@ -225,15 +226,21 @@ async function exportReportPptx(_title: string, data: OnePageReportData): Promis
   // ===== CAPTION =====
   const CAP_Y = GY + GH + 0.15;
   const CAP_H = 11.69 - 0.25 - 1.1 - CAP_Y;   // ที่เหลือก่อน footer
-  // Sanitize first — Tiptap HTML is user-controlled. htmlToText() only strips
-  // tags; without sanitization, malicious markup (e.g. attribute values with
-  // template escapes) can survive into the PPTX text.
+  // Sanitize first — Tiptap HTML is user-controlled. The text-runs walker
+  // only recognises a closed set of tags so malicious attributes can't
+  // sneak through, but we sanitize anyway to keep one trusted entry point.
   const safeHtml = sanitizeRichHtml(data.paragraphHtml || `<p>${escapePlain(data.paragraph || "")}</p>`);
-  const paragraphText = htmlToText(safeHtml);
-  slide.addText(paragraphText, {
+  const textRuns = htmlToTextRuns(safeHtml);
+  // Falling back to a single empty run when the editor was empty avoids
+  // pptxgenjs throwing on a zero-length array.
+  const captionRuns = textRuns.length > 0 ? textRuns : [{ text: "" }];
+  slide.addText(captionRuns, {
     x: 0.4, y: CAP_Y, w: 7.47, h: CAP_H,
     fontFace: "Sarabun", fontSize: 12, color: "111418",
     valign: "top", paraSpaceAfter: 4, indentLevel: 0,
+    // Frame-level align is the FALLBACK when an individual run doesn't
+    // specify its own. Block-level `text-align: center/right/justify`
+    // from the editor lands on per-run `align`, overriding this.
     align: "justify",
   });
 
