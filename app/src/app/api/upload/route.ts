@@ -5,9 +5,20 @@ import crypto from "node:crypto";
 import sharp from "sharp";
 import { fileTypeFromBuffer } from "file-type";
 import { auth } from "@/auth";
+import {
+  supabaseAdmin,
+  SUPABASE_STORAGE_BUCKET,
+  isSupabaseStorageEnabled,
+} from "@/lib/supabase";
 
 /**
  * File upload endpoint.
+ *
+ * Storage backend:
+ *  - Production / Vercel: Supabase Storage (Vercel's filesystem is read-only).
+ *    Activated when SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are set.
+ *  - Dev fallback: local `./public/uploads/` (legacy path, retained so existing
+ *    dev workflows that already use it keep working without env changes).
  *
  * Security hardening:
  *  - Auth-only (any logged-in user can upload)
@@ -89,9 +100,33 @@ export async function POST(req: NextRequest) {
 
   const ext = EXT_BY_MIME[detected.mime];
   const filename = `${crypto.randomUUID()}.${ext}`;
+
+  if (isSupabaseStorageEnabled() && supabaseAdmin) {
+    // Production path: write to Supabase Storage. The bucket must be public-read
+    // so that the returned URL renders without an extra signed-URL round-trip.
+    const { error } = await supabaseAdmin.storage
+      .from(SUPABASE_STORAGE_BUCKET)
+      .upload(filename, buf, {
+        contentType: detected.mime,
+        cacheControl: "public, max-age=31536000, immutable",
+        upsert: false,
+      });
+    if (error) {
+      return NextResponse.json(
+        { error: "storage_upload_failed", detail: error.message },
+        { status: 502 },
+      );
+    }
+    const { data } = supabaseAdmin.storage
+      .from(SUPABASE_STORAGE_BUCKET)
+      .getPublicUrl(filename);
+    return NextResponse.json({ url: data.publicUrl });
+  }
+
+  // Dev fallback: local filesystem. Only reached when SUPABASE_* env vars are
+  // unset — never on Vercel (its FS is read-only and the write would 500).
   const dir = path.join(process.cwd(), "public", "uploads");
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, filename), buf);
-
   return NextResponse.json({ url: `/uploads/${filename}` });
 }

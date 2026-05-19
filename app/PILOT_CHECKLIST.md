@@ -6,8 +6,32 @@ item below is checked.
 
 ---
 
+## Supabase
+
+- [ ] Project created at https://supabase.com, region noted (Singapore
+      `ap-southeast-1` or Tokyo `ap-northeast-1`)
+- [ ] Database password stored somewhere recoverable (1Password, etc.) —
+      it cannot be retrieved later, only reset
+- [ ] `uploads` Storage bucket exists and is marked **Public**
+- [ ] Schema deployed (10 tables visible under Table Editor:
+      `User`, `Account`, `Session`, `VerificationToken`, `OnePage`,
+      `OnePageVersion`, `Template`, `Group`, `GroupMembership`,
+      `AuditLog`)
+- [ ] Bootstrap admin row exists in `User` table (role=`ADMIN`,
+      status=`ACTIVE`)
+
 ## Secrets & environment
 
+- [ ] `DATABASE_URL` uses the **transaction pooler** (port `6543`,
+      `?pgbouncer=true&connection_limit=1`)
+- [ ] `DIRECT_URL` uses the **session pooler** (port `5432`)
+- [ ] Both URLs URL-encode special chars in the password (`@` → `%40`,
+      `#` → `%23`, etc.)
+- [ ] `SUPABASE_URL` is `https://<project-ref>.supabase.co` (the REST
+      base URL, NOT `db.<ref>.supabase.co`)
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` is the `service_role` key (NOT the
+      `anon` key — uploads write via service_role and bypass RLS)
+- [ ] `SUPABASE_STORAGE_BUCKET=uploads` matches the bucket name above
 - [ ] `AUTH_SECRET` is a fresh 32+ char random value (NOT the placeholder)
 - [ ] `NEXTAUTH_URL` is the public HTTPS URL of the pilot environment
 - [ ] `ADMIN_PASSWORD` has been rotated from the seed value

@@ -1,2 +1,5 @@
 # Claude Code workspace (per-machine settings, skills cache, etc.)
 .claude/
+
+# MCP project config (contains Supabase personal access token)
+.mcp.json

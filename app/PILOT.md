@@ -14,8 +14,12 @@ go / no-go for the org-wide rollout.
 ## 0. Prerequisites (one-time)
 
 - [ ] You have shell + `pnpm` access to deploy the app.
-- [ ] You have an account at https://vercel.com (or whichever host you
-      use) with the ability to set environment variables.
+- [ ] You have an account at https://vercel.com with the ability to set
+      environment variables.
+- [ ] You have an account at https://supabase.com with one project
+      created (this owns the Postgres DB and the `uploads` Storage
+      bucket). Region: Southeast Asia (Singapore) or East Asia (Tokyo)
+      depending on latency.
 - [ ] You have admin access to the LINE Developers console
       (https://developers.line.biz/console/).
 - [ ] You have a "กองตัวอย่าง" / sample unit identified (name + size +
@@ -69,20 +73,56 @@ step.
 
 ---
 
-## 2. Set production environment variables
+## 2. Provision Supabase (Postgres + Storage)
 
-In Vercel (or your host's dashboard), set the following on the
-**Production** environment:
+1. Create a project at https://supabase.com → region close to your
+   users (Singapore for Thailand). Save the database password from the
+   project-creation form — you will need it in the connection strings
+   below.
+2. **Connection strings** — Project Settings → Database. You will use
+   TWO of them in the Vercel env:
+   - `DATABASE_URL` = **Transaction pooler** (port `6543`,
+     `?pgbouncer=true&connection_limit=1`). Next.js runtime uses this.
+   - `DIRECT_URL` = **Session pooler** (port `5432`). Prisma migrate
+     uses this. Direct Postgres on `db.<ref>.supabase.co:5432` is
+     IPv6-only and may not be reachable from every network — the
+     session pooler is IPv4 and works everywhere we tested.
+   - URL-encode the password if it contains `@` (`%40`), `#` (`%23`),
+     etc. Wrong encoding is the #1 cause of `P1001 Can't reach database
+     server`.
+3. **Storage bucket** — Storage → New bucket → name `uploads`, mark it
+   **Public**. Copy the **service_role** key from Project Settings →
+   API (NOT the anon key — `/api/upload` writes via service_role).
+4. **Verify** — open Project Settings → Database → "Connection
+   pooler" and confirm both URLs are listed.
+
+> Migrations were applied during dev via Supabase MCP `apply_migration`;
+> in CI, run `pnpm prisma migrate deploy` against `DIRECT_URL` instead.
+
+## 3. Set production environment variables
+
+In Vercel, set the following on the **Production** environment:
 
 ```
-DATABASE_URL=<postgres or production sqlite path>
+# Database (Supabase)
+DATABASE_URL=<Supabase transaction pooler URL — port 6543>
+DIRECT_URL=<Supabase session pooler URL — port 5432>
+
+# Auth.js
 AUTH_SECRET=<openssl rand -base64 32>
 AUTH_TRUST_HOST=true
 NEXTAUTH_URL=https://<your-domain>
+
+# Bootstrap admin (seed run once)
 ADMIN_EMAIL=<bootstrap admin email>
 ADMIN_PASSWORD=<strong random — rotate after first seed>
-UPLOAD_DIR=./public/uploads
+ADMIN_NAME=System Administrator
+
+# Uploads (Supabase Storage — Vercel FS is read-only)
 MAX_UPLOAD_MB=10
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<from Supabase Project Settings → API>
+SUPABASE_STORAGE_BUCKET=uploads
 
 # M2 (LINE Login)
 AUTH_LINE_ID=<from step 1a>

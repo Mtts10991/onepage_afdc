@@ -14,6 +14,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Redirect `@/lib/prisma` to a test-only client (SQLite). MUST appear
+      // before the generic `@` alias because vitest matches in order.
+      // All app code must import prisma as `@/lib/prisma` (not relative)
+      // for this swap to take effect.
+      "@/lib/prisma": path.resolve(__dirname, "./tests/prisma-shim.ts"),
       "@": path.resolve(__dirname, "./src"),
     },
   },

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { prisma } from "./prisma";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Append a row to the audit trail.

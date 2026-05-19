@@ -1,0 +1,180 @@
+// SQLite test schema — used only by tests/global-setup.ts via
+//   pnpm prisma db push --schema=./prisma/schema.test.prisma
+//
+// Why a separate file: the production schema (`schema.prisma`) targets
+// Supabase Postgres, but tests run offline against a throwaway SQLite
+// file (`prisma/test.db`) so they don't need a network connection.
+// Keep model definitions identical to `schema.prisma` — only the
+// `datasource` block differs. The generator deliberately omits a custom
+// `output` so the runtime Prisma Client (used by app code under test)
+// is the same one generated from `schema.prisma`; the test schema only
+// drives `prisma db push`, never client generation.
+
+// Test Prisma Client lives in a separate output path so it does not
+// overwrite the production client generated from schema.prisma. The
+// vitest config aliases `@/lib/prisma` to `tests/prisma-shim.ts`, which
+// imports `PrismaClient` from this path at runtime.
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client-test"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  title         String?
+  phone         String?
+  avatarUrl     String?
+  role          String    @default("USER")
+  isActive      Boolean   @default(true)
+  status        String    @default("ACTIVE")
+  registrationSource String  @default("admin_created")
+  lineBotUserId String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  onepages         OnePage[]      @relation("OwnedOnePages")
+  lastEditedPages  OnePage[]      @relation("LastEditedOnePages")
+  versions         OnePageVersion[]
+  templates        Template[]
+  groupMemberships GroupMembership[]
+  accounts         Account[]
+  sessions         Session[]
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     GroupMembership[]
+}
+
+model GroupMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model OnePage {
+  id          String    @id @default(cuid())
+  title       String
+  ownerId     String
+  data        String
+  thumbnail   String?
+  lastEditedById String?
+  lastEditedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner         User    @relation("OwnedOnePages", fields: [ownerId], references: [id], onDelete: Cascade)
+  lastEditedBy  User?   @relation("LastEditedOnePages", fields: [lastEditedById], references: [id], onDelete: SetNull)
+  versions      OnePageVersion[]
+
+  @@index([ownerId])
+  @@index([updatedAt])
+  @@index([ownerId, updatedAt])
+  @@index([title])
+}
+
+model OnePageVersion {
+  id          String   @id @default(cuid())
+  onepageId   String
+  authorId    String
+  data        String
+  note        String?
+  createdAt   DateTime @default(now())
+
+  onepage     OnePage  @relation(fields: [onepageId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([onepageId])
+  @@index([createdAt])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String
+  data        String
+  isSystem    Boolean  @default(false)
+  ownerId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([type])
+  @@index([isSystem])
+  @@index([ownerId, type, updatedAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  event       String
+  actorId     String?
+  actorEmail  String?
+  targetId    String?
+  metadata    String?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([event])
+  @@index([actorId])
+  @@index([createdAt])
+}

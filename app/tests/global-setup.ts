@@ -16,9 +16,18 @@ export default async function globalSetup() {
     }
   }
   process.env.DATABASE_URL = `file:${TEST_DB_PATH}`;
-  execSync("pnpm prisma db push --skip-generate --accept-data-loss", {
-    cwd: path.resolve(__dirname, ".."),
+  // Use the SQLite test schema (separate file because production
+  // schema.prisma targets Postgres). Generate the test client into a
+  // separate output path so it does not clobber the production client.
+  const cwd = path.resolve(__dirname, "..");
+  const env = { ...process.env, DATABASE_URL: `file:${TEST_DB_PATH}` };
+  execSync("pnpm prisma generate --schema=./prisma/schema.test.prisma", {
+    cwd,
     stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: `file:${TEST_DB_PATH}` },
+    env,
   });
+  execSync(
+    "pnpm prisma db push --schema=./prisma/schema.test.prisma --skip-generate --accept-data-loss",
+    { cwd, stdio: "inherit", env },
+  );
 }

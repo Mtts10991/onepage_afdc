@@ -1,5 +1,8 @@
 // Prisma schema for OnePage app
-// - SQLite local (ไม่รองรับ enum → ใช้ String + check ใน app)
+// - Postgres (Supabase) for pilot/prod. ใช้ String แทน enum เพื่อให้ schema
+//   พกพาได้กับ SQLite local dev เก่าและ Postgres prod
+// - DATABASE_URL = pooled (pgbouncer port 6543) สำหรับ serverless runtime
+// - DIRECT_URL   = direct (port 5432) สำหรับ prisma migrate / introspect
 // - Auth.js compatible (User, Account, Session, VerificationToken)
 // - OnePage + OnePageVersion (เก็บประวัติเพื่อย้อนกลับ/Export)
 
@@ -8,11 +11,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// Role: "ADMIN" | "USER"  (SQLite ไม่รองรับ enum → ใช้ String)
+// Role: "ADMIN" | "USER"  (ใช้ String แทน enum เพื่อให้พกพา SQLite/Postgres)
 
 model User {
   id            String    @id @default(cuid())
