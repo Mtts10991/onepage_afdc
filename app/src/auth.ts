@@ -264,14 +264,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // longer exists. Confirm the row before we let pieces of the
       // upsert below explode on a foreign-key violation (which would
       // surface to the user as the unhelpful "AccessDenied").
-      const row = await prisma.user.findUnique({
+      let row = await prisma.user.findUnique({
         where: { id },
         select: { id: true, status: true, email: true },
       });
+      // Fallback: pgbouncer transaction-pool snapshots can race so the
+      // freshly-created row from profile() is invisible to this query
+      // until the pool advances. Email is unique, so retry by email
+      // before declaring the login a failure.
+      if (!row && (user as any).email) {
+        row = await prisma.user.findUnique({
+          where: { email: (user as any).email },
+          select: { id: true, status: true, email: true },
+        });
+      }
       if (!row) {
         await audit("auth.login.failure", {
           actorEmail: (user as any).email ?? null,
-          metadata: { provider: "line", reason: "user_not_found_post_profile" },
+          metadata: {
+            provider: "line",
+            reason: "user_not_found_post_profile",
+            profileId: id,
+          },
         });
         return `/login?error=line_unknown`;
       }
