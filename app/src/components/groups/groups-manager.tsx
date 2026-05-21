@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { proxyAvatar } from "@/lib/avatar-url";
 import {
   Dialog,
   DialogContent,
@@ -278,7 +279,7 @@ function GroupCard({
                 className="flex items-center gap-2 rounded-md border bg-card px-2 py-1.5"
               >
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={m.user.avatarUrl ?? undefined} alt="" />
+                  <AvatarImage src={proxyAvatar(m.user.avatarUrl) ?? undefined} alt="" />
                   <AvatarFallback className="text-xs">
                     {(m.user.name ?? m.user.email).slice(0, 1).toUpperCase()}
                   </AvatarFallback>

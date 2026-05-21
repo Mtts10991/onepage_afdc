@@ -20,6 +20,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { OnePagesToolbar } from "@/components/onepage/onepages-toolbar";
 import { Plus, Edit, Eye } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { proxyAvatar } from "@/lib/avatar-url";
 import { parseOnePageData } from "@/lib/onepage-schema";
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -170,7 +171,7 @@ export default async function OnePagesListPage({ searchParams }: PageProps) {
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar className="h-8 w-8 shrink-0">
-                          <AvatarImage src={p.owner.avatarUrl ?? undefined} alt={displayName} />
+                          <AvatarImage src={proxyAvatar(p.owner.avatarUrl) ?? undefined} alt={displayName} />
                           <AvatarFallback className="text-xs">
                             {displayName.slice(0, 1).toUpperCase()}
                           </AvatarFallback>
@@ -186,7 +187,7 @@ export default async function OnePagesListPage({ searchParams }: PageProps) {
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar className="h-7 w-7 shrink-0">
-                          <AvatarImage src={editor.avatarUrl ?? undefined} alt={editorName} />
+                          <AvatarImage src={proxyAvatar(editor.avatarUrl) ?? undefined} alt={editorName} />
                           <AvatarFallback className="text-[10px]">
                             {editorName.slice(0, 1).toUpperCase()}
                           </AvatarFallback>

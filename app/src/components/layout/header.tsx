@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { proxyAvatar } from "@/lib/avatar-url";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
 import { LogOut, User, ChevronDown } from "lucide-react";
@@ -30,7 +31,7 @@ export function Header() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="gap-2 px-2 group">
             <Avatar className="h-7 w-7 transition-transform duration-150 group-hover:scale-105">
-              <AvatarImage src={user?.image ?? undefined} />
+              <AvatarImage src={proxyAvatar(user?.image) ?? undefined} />
               <AvatarFallback>
                 {(user?.name ?? "U").slice(0, 1).toUpperCase()}
               </AvatarFallback>

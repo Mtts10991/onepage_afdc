@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { proxyAvatar } from "@/lib/avatar-url";
 import { ImagePicker } from "@/components/onepage/image-picker";
 import { Save, Lock } from "lucide-react";
 
@@ -97,7 +98,7 @@ export function ProfileForm({ user }: { user: User }) {
         <CardContent className="grid sm:grid-cols-[180px_1fr] gap-6">
           <div className="flex flex-col items-center gap-3">
             <Avatar className="w-32 h-32">
-              <AvatarImage src={avatarUrl ?? undefined} />
+              <AvatarImage src={proxyAvatar(avatarUrl) ?? undefined} />
               <AvatarFallback className="text-2xl">
                 {(name || user.email).slice(0, 1).toUpperCase()}
               </AvatarFallback>
