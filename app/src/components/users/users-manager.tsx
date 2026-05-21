@@ -55,7 +55,10 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
 
   async function save(form: FormData) {
     const payload: any = Object.fromEntries(form.entries());
-    if (payload.password === "") delete payload.password;
+    // Drop an empty / whitespace-only password so editing other fields
+    // doesn't force a password change. `.trim()` also catches a value the
+    // browser autofilled with only spaces.
+    if (!String(payload.password ?? "").trim()) delete payload.password;
     payload.role = payload.role || "USER";
 
     try {
@@ -66,7 +69,29 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        // Surface WHY the save failed instead of a generic error. The API
+        // returns a zod `flatten()` for validation failures; the most
+        // common one here is the password policy (e.g. a browser-autofilled
+        // password that lacks an uppercase letter), which would otherwise
+        // silently block an unrelated name/role edit.
+        const body = await res.json().catch(() => ({}));
+        const pwdCode: string | undefined =
+          body?.error?.fieldErrors?.password?.[0];
+        if (pwdCode) {
+          const pwdMap: Record<string, string> = {
+            too_short: t("password.tooShort"),
+            too_long: t("password.tooLong"),
+            missing_lowercase: t("password.missingLowercase"),
+            missing_uppercase: t("password.missingUppercase"),
+            missing_digit: t("password.missingDigit"),
+          };
+          toast.error(pwdMap[pwdCode] ?? t("password.invalid"));
+          return;
+        }
+        toast.error(t("common.error"));
+        return;
+      }
       toast.success(t("users.saved"));
       setOpen(false);
       setEditing(null);
