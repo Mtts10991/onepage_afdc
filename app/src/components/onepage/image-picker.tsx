@@ -26,14 +26,32 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  // Read a picked/dropped image file into a data URL and open the crop
+  // dialog. Shared by the hidden <input>, the click-to-pick drop zone, and
+  // drag-and-drop so all three entry points behave identically.
+  function openCropFor(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error(tu("typeNotAllowed"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setCropSrc(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => setCropSrc(reader.result as string);
-    reader.readAsDataURL(f);
     e.target.value = "";
+    if (f) openCropFor(f);
+  }
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) openCropFor(f);
   }
 
   function mapUploadError(
@@ -114,9 +132,33 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
 
   return (
     <div className="space-y-2">
+      {/*
+        The frame doubles as a click-to-pick + drag-and-drop zone, matching
+        the "ลากไฟล์มาวาง หรือคลิกเพื่อเลือก" hint. Previously the hint was
+        shown but the frame had no handlers, so clicking it did nothing —
+        users had to find the separate button below.
+      */}
       <div
-        className="relative w-full border rounded-md overflow-hidden bg-muted/30 grid place-items-center"
+        className={`relative w-full border rounded-md overflow-hidden bg-muted/30 grid place-items-center cursor-pointer transition-colors ${
+          dragOver ? "border-primary bg-primary/5" : ""
+        }`}
         style={{ aspectRatio: aspect ? String(aspect) : "4 / 3" }}
+        onClick={() => !uploading && inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === " ") && !uploading) {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        aria-label={t("upload")}
       >
         {value ? (
           // proxyAvatar rewrites a LINE CDN url (e.g. a profile picture
@@ -134,7 +176,12 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
         {value && (
           <button
             type="button"
-            onClick={() => onChange(null)}
+            // stopPropagation: the frame is now a click-to-pick zone, so a
+            // bare click here would also re-open the file dialog.
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange(null);
+            }}
             className="absolute top-1 right-1 grid place-items-center w-6 h-6 rounded-full bg-black/60 text-white shadow cursor-pointer transition-all duration-150 ease-out hover:bg-black/85 hover:scale-110 hover:shadow-md active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             aria-label={t("remove")}
             title={t("remove")}
