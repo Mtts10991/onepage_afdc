@@ -245,6 +245,55 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
+    // Override the edge-safe jwt callback from auth.config.ts with a
+    // DB-backed one. The edge version only writes user fields onto the
+    // token on first sign-in, so the token's `id` / `role` / `status` are
+    // frozen at login time. That caused two production failures:
+    //  - a token minted before the M7.5 LINE-login fix could carry an `id`
+    //    that does not exist in the User table; every `create({ ownerId:
+    //    id })` then died with a P2003 foreign-key violation.
+    //  - admin role/status changes never took effect until re-login.
+    // Re-reading the row from the DB on every token refresh fixes both:
+    // the session self-heals and stale ids/roles can never persist.
+    //
+    // This runs in the Node runtime (auth.ts), where Prisma is available —
+    // auth.config.ts stays Prisma-free so middleware/edge keeps working.
+    async jwt({ token, user }) {
+      // First sign-in: `user` is present. Seed the token from it.
+      if (user) {
+        token.id = (user as any).id;
+        token.role = (user as any).role;
+        token.status = (user as any).status ?? "ACTIVE";
+      }
+      // Every call (including plain refreshes): re-read the authoritative
+      // row. If the id no longer resolves to a real User, blank the token
+      // fields so downstream code treats the session as unauthenticated
+      // instead of handing a dangling id to a foreign-key insert.
+      const id = token.id as string | undefined;
+      if (id) {
+        try {
+          const row = await prisma.user.findUnique({
+            where: { id },
+            select: { id: true, role: true, status: true, isActive: true },
+          });
+          if (row && row.isActive) {
+            token.id = row.id;
+            token.role = row.role;
+            token.status = row.status;
+          } else {
+            // Stale or deactivated — drop identity so `authorized()` bounces
+            // the request to /login on the next navigation.
+            delete token.id;
+            delete token.role;
+            delete token.status;
+          }
+        } catch {
+          // DB unreachable — keep the existing token rather than logging
+          // the user out on a transient blip.
+        }
+      }
+      return token;
+    },
     async signIn({ user, account, profile }) {
       if (account?.provider !== "line") return true;
       const id = (user as any)?.id as string | undefined;

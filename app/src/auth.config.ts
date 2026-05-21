@@ -21,7 +21,12 @@ export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
+      // Treat the session as logged-in only when it carries a real user
+      // id. The Node-runtime jwt callback (auth.ts) blanks token.id when
+      // the id no longer resolves to a User row; without the id check
+      // such a token would still slip past the gate and hand `undefined`
+      // to a foreign-key insert downstream.
+      const isLoggedIn = !!(auth?.user as { id?: string } | undefined)?.id;
       const isOnLogin = nextUrl.pathname.startsWith("/login");
       const isOnPending = nextUrl.pathname.startsWith("/pending-approval");
       const status = (auth?.user as { status?: string } | undefined)?.status;

@@ -43,7 +43,12 @@ const createSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "unauth" }, { status: 401 });
+  // `session.user.id` can be absent when the jwt callback blanked a stale
+  // token (an id that no longer resolves to a User row). Treat that as
+  // unauthenticated rather than passing `undefined` into a foreign-key
+  // insert, which would surface as an opaque 500.
+  if (!session?.user?.id)
+    return NextResponse.json({ error: "unauth" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = createSchema.safeParse(body);
