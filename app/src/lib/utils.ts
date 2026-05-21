@@ -10,6 +10,12 @@ export function formatDate(d: Date | string, locale = "th-TH") {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
+    // Pin to ICT. Without an explicit timeZone, Intl uses the runtime's
+    // zone — UTC on Vercel's servers but the visitor's local zone in the
+    // browser. The two render different strings for the same Date, which
+    // React flags as a hydration mismatch (error #418). This app is for a
+    // Thai government audience, so ICT is also the correct display zone.
+    timeZone: "Asia/Bangkok",
   }).format(date);
 }
 
