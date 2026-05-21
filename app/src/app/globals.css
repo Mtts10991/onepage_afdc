@@ -193,3 +193,46 @@ html, body {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * SweetAlert2 theming — pins the confirm/cancel popup (lib/confirm.ts)
+ * to the app's HSL design tokens so it matches the UI and follows dark
+ * mode. The `.swal-app` class is set via customClass in confirm.ts.
+ */
+.swal2-popup.swal-app {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius, 0.5rem);
+  /* Responsive: never wider than the viewport on small screens. */
+  width: min(92vw, 32rem);
+}
+.swal-app .swal2-title {
+  color: hsl(var(--card-foreground));
+  font-size: 1.125rem;
+}
+.swal-app .swal2-html-container {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9rem;
+}
+.swal-app .swal2-actions {
+  gap: 0.5rem;
+}
+.swal-app .swal2-confirm,
+.swal-app .swal2-cancel {
+  border-radius: var(--radius, 0.5rem);
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+}
+/* On phones, stack the buttons full-width so they're easy to tap. */
+@media (max-width: 480px) {
+  .swal-app .swal2-actions {
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+  .swal-app .swal2-confirm,
+  .swal-app .swal2-cancel {
+    width: 100%;
+    margin: 0;
+  }
+}

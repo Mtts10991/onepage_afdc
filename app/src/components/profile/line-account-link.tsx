@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { confirmDialog } from "@/lib/confirm";
 
 interface Props {
   linked: boolean;
@@ -38,11 +39,15 @@ export function LineAccountLink({ linked, email }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
-  function link() {
+  async function link() {
     // Confirmation step: ปุ่มจะส่งผู้ใช้ออกจาก session ปัจจุบันใน OAuth
     // flow. ถ้าเขาใช้ LINE บัญชีที่ email ไม่ตรง อาจกลายเป็น user คนละคน
     // เลย — บังคับ confirm ก่อนเพื่อกัน misclick.
-    const ok = window.confirm(t("lineLinkConfirm", { email }));
+    const ok = await confirmDialog({
+      title: t("lineLink"),
+      text: t("lineLinkConfirm", { email }),
+      confirmLabel: t("lineLink"),
+    });
     if (!ok) return;
     start(async () => {
       await signIn("line", { callbackUrl: "/profile" });

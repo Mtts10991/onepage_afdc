@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { confirmDialog } from "@/lib/confirm";
 import { Plus, Edit, Trash2, UserPlus, X } from "lucide-react";
 
 interface UserLite {
@@ -62,7 +62,6 @@ export function GroupsManager({ groups, allUsers }: Props) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<GroupRow | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<GroupRow | null>(null);
 
   async function createGroup(name: string, description: string) {
     const res = await fetch("/api/groups", {
@@ -160,7 +159,15 @@ export function GroupsManager({ groups, allUsers }: Props) {
               group={grp}
               allUsers={allUsers}
               onEdit={() => setEditing(grp)}
-              onDelete={() => setDeleteTarget(grp)}
+              onDelete={async () => {
+                const ok = await confirmDialog({
+                  title: t("groups.deleteConfirmTitle"),
+                  text: t("groups.deleteConfirmDescription", { name: grp.name }),
+                  confirmLabel: t("common.delete"),
+                  variant: "destructive",
+                });
+                if (ok) await performDelete(grp);
+              }}
               onAddMember={(uid) => addMember(grp.id, uid)}
               onRemoveMember={(uid) => removeMember(grp.id, uid)}
             />
@@ -188,22 +195,6 @@ export function GroupsManager({ groups, allUsers }: Props) {
         onSubmit={renameGroup}
       />
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={t("groups.deleteConfirmTitle")}
-        description={
-          deleteTarget
-            ? t("groups.deleteConfirmDescription", { name: deleteTarget.name })
-            : ""
-        }
-        confirmLabel={t("common.delete")}
-        variant="destructive"
-        onConfirm={async () => {
-          if (deleteTarget) await performDelete(deleteTarget);
-          setDeleteTarget(null);
-        }}
-      />
     </div>
   );
 }

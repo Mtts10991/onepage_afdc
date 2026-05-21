@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { confirmDialog } from "@/lib/confirm";
 import { Edit, Trash2, FileText, Camera } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -57,7 +57,6 @@ export function TemplatesManager({ templates, title, description }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const [editing, setEditing] = useState<TemplateRow | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<TemplateRow | null>(null);
 
   async function saveEdit(name: string, descriptionText: string) {
     if (!editing) return;
@@ -160,7 +159,17 @@ export function TemplatesManager({ templates, title, description }: Props) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDeleteTarget(tpl)}
+                      onClick={async () => {
+                        const ok = await confirmDialog({
+                          title: t("templates.deleteConfirmTitle"),
+                          text: t("templates.deleteConfirmDescription", {
+                            name: tpl.name,
+                          }),
+                          confirmLabel: t("common.delete"),
+                          variant: "destructive",
+                        });
+                        if (ok) await performDelete(tpl);
+                      }}
                       aria-label={t("common.delete")}
                       title={t("common.delete")}
                       className="text-destructive hover:text-destructive"
@@ -181,22 +190,6 @@ export function TemplatesManager({ templates, title, description }: Props) {
         onSave={saveEdit}
       />
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={t("templates.deleteConfirmTitle")}
-        description={
-          deleteTarget
-            ? t("templates.deleteConfirmDescription", { name: deleteTarget.name })
-            : ""
-        }
-        confirmLabel={t("common.delete")}
-        variant="destructive"
-        onConfirm={async () => {
-          if (deleteTarget) await performDelete(deleteTarget);
-          setDeleteTarget(null);
-        }}
-      />
     </div>
   );
 }

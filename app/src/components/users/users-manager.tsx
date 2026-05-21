@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { confirmDialog } from "@/lib/confirm";
 import { Plus, Edit, Trash2, KeyRound, Power } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -47,7 +47,6 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
   async function refresh() {
     router.refresh();
@@ -298,7 +297,15 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setDeleteTarget(u)}
+                      onClick={async () => {
+                        const ok = await confirmDialog({
+                          title: t("common.delete"),
+                          text: t("users.deleteConfirm", { email: u.email }),
+                          confirmLabel: t("common.delete"),
+                          variant: "destructive",
+                        });
+                        if (ok) await performDelete(u);
+                      }}
                       aria-label={t("common.delete")}
                       title={t("common.delete")}
                     >
@@ -312,22 +319,6 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
         </CardContent>
       </Card>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title={t("common.delete")}
-        description={
-          deleteTarget
-            ? t("users.deleteConfirm", { email: deleteTarget.email })
-            : ""
-        }
-        confirmLabel={t("common.delete")}
-        variant="destructive"
-        onConfirm={async () => {
-          if (deleteTarget) await performDelete(deleteTarget);
-          setDeleteTarget(null);
-        }}
-      />
     </div>
   );
 }

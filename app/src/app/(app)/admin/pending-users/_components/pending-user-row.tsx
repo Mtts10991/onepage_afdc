@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { proxyAvatar } from "@/lib/avatar-url";
+import { confirmDialog } from "@/lib/confirm";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 
 interface Props {
@@ -52,9 +53,14 @@ export function PendingUserRow({
     });
   }
 
-  function reject() {
-    if (!window.confirm(t("rejectConfirm", { email }))) return;
-    void call("reject");
+  async function reject() {
+    const ok = await confirmDialog({
+      title: t("reject"),
+      text: t("rejectConfirm", { email }),
+      confirmLabel: t("reject"),
+      variant: "destructive",
+    });
+    if (ok) void call("reject");
   }
 
   return (
