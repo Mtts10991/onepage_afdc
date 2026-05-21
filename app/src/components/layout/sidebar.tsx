@@ -17,6 +17,7 @@ import {
   Network,
   BarChart3,
   UserPlus,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           { href: "/admin/metrics", label: t("metrics"), icon: BarChart3 },
         ]
       : []),
+    // Profile is a primary destination for every user (not admin-only), so
+    // it belongs in the sidebar — not hidden behind the avatar dropdown,
+    // which users were not finding. The dropdown link stays as a secondary
+    // entry point (standard avatar-menu convention).
+    { href: "/profile", label: t("profile"), icon: User },
   ];
 
   // หา item ที่ active แบบ longest-match (ป้องกัน prefix ซ้อนกัน เช่น /onepages กับ /onepages/new)
