@@ -18,17 +18,29 @@ import {
   BarChart3,
   UserPlus,
   User,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SidebarProps {
+  /** Desktop: narrow (icon-only) vs full width. */
   collapsed: boolean;
-  onToggle: () => void;
+  /** Desktop: toggle the collapsed width. */
+  onToggleCollapsed: () => void;
+  /** Mobile: whether the off-canvas drawer is slid in. */
+  mobileOpen: boolean;
+  /** Mobile: close the drawer (backdrop / nav / close button). */
+  onCloseMobile: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({
+  collapsed,
+  onToggleCollapsed,
+  mobileOpen,
+  onCloseMobile,
+}: SidebarProps) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const { data } = useSession();
@@ -96,8 +108,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 flex flex-col border-r bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))] transition-[width] duration-300",
-        collapsed ? "w-16" : "w-53"
+        "fixed inset-y-0 left-0 z-40 flex flex-col border-r bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-fg))] transition-[width,transform] duration-300",
+        // Desktop: always visible; `collapsed` switches icon-only vs full.
+        collapsed ? "md:w-16" : "md:w-53",
+        "md:translate-x-0",
+        // Mobile: full-width drawer (never icon-only) that slides off-screen
+        // when closed. `mobileOpen` controls the slide.
+        "w-53",
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
       )}
     >
       <div
@@ -118,11 +136,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </div>
           {!collapsed && <span className="font-semibold truncate">OnePage</span>}
         </Link>
+        {/* Desktop: collapse/expand the sidebar width. */}
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggle}
-          className="shrink-0 h-8 w-8"
+          onClick={onToggleCollapsed}
+          className="shrink-0 h-8 w-8 hidden md:inline-flex"
           aria-label={t("toggleSidebar")}
           title={collapsed ? t("expandSidebar") : t("collapseSidebar")}
         >
@@ -131,6 +150,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           ) : (
             <ChevronLeft className="h-4 w-4" />
           )}
+        </Button>
+        {/* Mobile: close the off-canvas drawer. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCloseMobile}
+          className="shrink-0 h-8 w-8 md:hidden"
+          aria-label={t("closeSidebar")}
+          title={t("closeSidebar")}
+        >
+          <X className="h-4 w-4" />
         </Button>
       </div>
 

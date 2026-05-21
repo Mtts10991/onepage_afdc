@@ -15,6 +15,8 @@
     "toggleSidebar": "สลับแถบเมนู",
     "expandSidebar": "ขยาย",
     "collapseSidebar": "ย่อ",
+    "closeSidebar": "ปิดเมนู",
+    "openMenu": "เปิดเมนู",
     "audit": "บันทึกตรวจสอบ",
     "metrics": "ตัวชี้วัด baseline",
     "pendingUsers": "ผู้รออนุมัติ",

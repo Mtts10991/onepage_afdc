@@ -16,15 +16,33 @@ import { Button } from "@/components/ui/button";
 import { proxyAvatar } from "@/lib/avatar-url";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./language-toggle";
-import { LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, User, ChevronDown, Menu } from "lucide-react";
 
-export function Header() {
+interface HeaderProps {
+  /** Mobile only: open the off-canvas navigation drawer. */
+  onOpenMobileNav: () => void;
+}
+
+export function Header({ onOpenMobileNav }: HeaderProps) {
   const t = useTranslations();
   const { data } = useSession();
   const user = data?.user;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-end gap-2 border-b bg-[hsl(var(--header-bg))] px-4">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-[hsl(var(--header-bg))] px-4">
+      {/* Hamburger — opens the nav drawer; mobile only (sidebar is fixed on md+). */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onOpenMobileNav}
+        className="md:hidden shrink-0"
+        aria-label={t("nav.openMenu")}
+        title={t("nav.openMenu")}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+      {/* Spacer pushes the controls to the right (replaces justify-end). */}
+      <div className="flex-1" />
       <LanguageToggle />
       <ThemeToggle />
       <DropdownMenu>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
@@ -10,14 +11,26 @@ const KEY = "sidebar-collapsed";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("a11y");
+  const pathname = usePathname();
+  // Desktop: sidebar is always visible, `collapsed` toggles its width.
   const [collapsed, setCollapsed] = useState(false);
+  // Mobile (< md): the sidebar is an off-canvas drawer. `mobileOpen`
+  // slides it in over a backdrop instead of stealing layout width — on a
+  // 390px screen a fixed 210px sidebar left almost no room for content.
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const v = localStorage.getItem(KEY);
     if (v != null) setCollapsed(v === "1");
   }, []);
 
-  function toggle() {
+  // Close the mobile drawer on navigation — otherwise it stays open
+  // covering the page the user just navigated to.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  function toggleCollapsed() {
     setCollapsed((c) => {
       const next = !c;
       localStorage.setItem(KEY, next ? "1" : "0");
@@ -39,18 +52,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         {t("skipToContent")}
       </a>
-      <Sidebar collapsed={collapsed} onToggle={toggle} />
+
+      {/* Backdrop — only on mobile, only when the drawer is open. */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <Sidebar
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+      />
+
+      {/*
+        Content padding tracks the sidebar width on desktop only. On mobile
+        the sidebar is an overlay, so content is full-width (pl-0).
+      */}
       <div
         className={cn(
           "transition-[padding] duration-300",
-          collapsed ? "pl-16" : "pl-53"
+          collapsed ? "md:pl-16" : "md:pl-53"
         )}
       >
-        <Header />
+        <Header onOpenMobileNav={() => setMobileOpen(true)} />
         <main
           id="main-content"
           tabIndex={-1}
-          className="p-3 md:p-3 anim-fade-in focus:outline-none"
+          className="p-3 anim-fade-in focus:outline-none"
         >
           {children}
         </main>
