@@ -265,15 +265,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as any).role;
         token.status = (user as any).status ?? "ACTIVE";
       }
-      // Every call (including plain refreshes): re-read the authoritative
-      // row. If the id no longer resolves to a real User, blank the token
-      // fields so downstream code treats the session as unauthenticated
-      // instead of handing a dangling id to a foreign-key insert.
+      // Resolve the authoritative User row on every call. We look up by id
+      // when the token has one, otherwise by email — on a LINE OAuth login
+      // the object NextAuth passes to this callback does not always carry
+      // our custom `id` field, but `token.email` is always populated, so
+      // the email fallback is what actually puts `id`/`role`/`status` onto
+      // the token. Without it the session has only name/email/image and
+      // `authorized()` treats the user as logged-out (bounce to /login).
+      //
+      // Re-reading every call also means stale ids and stale role/status
+      // can never persist: the row is the single source of truth.
       const id = token.id as string | undefined;
-      if (id) {
+      const email = token.email as string | undefined;
+      if (id || email) {
         try {
           const row = await prisma.user.findUnique({
-            where: { id },
+            where: id ? { id } : { email: email! },
             select: { id: true, role: true, status: true, isActive: true },
           });
           if (row && row.isActive) {
@@ -281,8 +288,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.role = row.role;
             token.status = row.status;
           } else {
-            // Stale or deactivated — drop identity so `authorized()` bounces
-            // the request to /login on the next navigation.
+            // No matching active user — drop identity so `authorized()`
+            // bounces the request to /login on the next navigation.
             delete token.id;
             delete token.role;
             delete token.status;
