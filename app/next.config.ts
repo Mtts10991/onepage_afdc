@@ -15,6 +15,21 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
  * `img-src` includes `data:` for the data-URL avatars / cropped images we
  * produce client-side, and `blob:` for html-to-image PNG export previews.
  */
+
+// Origin of the Supabase project (scheme + host, no path). Derived from
+// SUPABASE_URL so the CSP `connect-src` can allow the browser to PUT files
+// straight to Supabase Storage via a signed URL. Empty when SUPABASE_URL
+// is unset (local dev with no Supabase configured).
+const SUPABASE_ORIGIN = (() => {
+  const raw = process.env.SUPABASE_URL;
+  if (!raw) return "";
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return "";
+  }
+})();
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -42,7 +57,11 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      // The browser PUTs files straight to Supabase Storage via a signed
+      // URL (see /api/upload/sign), so the Supabase project origin must be
+      // an allowed `connect-src` target. Derived from SUPABASE_URL so no
+      // hostname is hard-coded; falls back to 'self' only when unset.
+      `connect-src 'self'${SUPABASE_ORIGIN ? ` ${SUPABASE_ORIGIN}` : ""}`,
       "frame-ancestors 'none'",
       "form-action 'self'",
       "base-uri 'self'",

@@ -35,28 +35,75 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
     e.target.value = "";
   }
 
+  function mapUploadError(
+    code: string | undefined,
+    maxMb: number,
+    maxDim: number,
+  ): string {
+    const map: Record<string, string> = {
+      too_large: tu("tooLarge", { max: maxMb }),
+      type_not_allowed: tu("typeNotAllowed"),
+      dimensions_too_large: tu("dimensionsTooLarge", { max: maxDim }),
+      invalid_image: tu("invalidImage"),
+      empty_file: tu("emptyFile"),
+    };
+    return map[code ?? ""] ?? tu("failed");
+  }
+
   async function uploadBlob(blob: Blob) {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", new File([blob], "image.png", { type: blob.type }));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const map: Record<string, string> = {
-          too_large: tu("tooLarge"),
-          type_not_allowed: tu("typeNotAllowed"),
-          dimensions_too_large: tu("dimensionsTooLarge", {
-            max: body?.maxDim ?? 8000,
-          }),
-          invalid_image: tu("invalidImage"),
-          empty_file: tu("emptyFile"),
-        };
-        toast.error(map[body?.error] ?? tu("failed"));
+      const contentType = blob.type || "image/png";
+
+      // Step 1 — ask the server for a signed upload URL. This request is
+      // tiny JSON, so it never trips Vercel's 4.5 MB function-payload cap.
+      const signRes = await fetch("/api/upload/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType, size: blob.size }),
+      });
+
+      if (signRes.ok) {
+        const { signedUrl, publicUrl } = await signRes.json();
+        // Step 2 — PUT the bytes STRAIGHT to Supabase Storage. The file
+        // never passes through a Vercel function, so there is no 4.5 MB
+        // limit on it — only the bucket's own (much larger) limit.
+        const putRes = await fetch(signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          body: blob,
+        });
+        if (!putRes.ok) {
+          toast.error(tu("failed"));
+          return;
+        }
+        onChange(publicUrl);
         return;
       }
-      const { url } = await res.json();
-      onChange(url);
+
+      // Sign endpoint refused. 503 storage_disabled = local dev without
+      // Supabase env → fall back to the legacy in-function upload route.
+      const signBody = await signRes.json().catch(() => ({}));
+      if (signBody?.error === "storage_disabled") {
+        const fd = new FormData();
+        fd.append("file", new File([blob], "image.png", { type: contentType }));
+        const res = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          toast.error(
+            mapUploadError(body?.error, body?.maxMb ?? 10, body?.maxDim ?? 8000),
+          );
+          return;
+        }
+        const { url } = await res.json();
+        onChange(url);
+        return;
+      }
+
+      // Any other sign-endpoint error (auth, too_large, type) — surface it.
+      toast.error(
+        mapUploadError(signBody?.error, signBody?.maxMb ?? 10, 8000),
+      );
     } catch {
       toast.error(tu("failed"));
     } finally {

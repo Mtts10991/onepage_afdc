@@ -315,7 +315,7 @@
     "hint": "At least 8 characters including uppercase, lowercase and a digit"
   },
   "upload": {
-    "tooLarge": "File is too large",
+    "tooLarge": "File is too large (max {max} MB)",
     "typeNotAllowed": "File type not allowed (only PNG / JPEG / WebP)",
     "dimensionsTooLarge": "Image dimensions too large (max {max}×{max} pixels)",
     "invalidImage": "Invalid or corrupted image",
