@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ImagePlus, Crop, X } from "lucide-react";
 import { ImageCropDialog } from "./image-crop-dialog";
+import { proxyAvatar } from "@/lib/avatar-url";
 
 interface Props {
   value: string | null;
@@ -118,8 +119,15 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
         style={{ aspectRatio: aspect ? String(aspect) : "4 / 3" }}
       >
         {value ? (
+          // proxyAvatar rewrites a LINE CDN url (e.g. a profile picture
+          // reused as an image value) through /api/avatar-proxy so CSP
+          // img-src 'self' doesn't block it; /uploads and data: pass through.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="" className="w-full h-full object-contain" />
+          <img
+            src={proxyAvatar(value) ?? undefined}
+            alt=""
+            className="w-full h-full object-contain"
+          />
         ) : (
           <span className="text-xs text-muted-foreground">{t("dragDrop")}</span>
         )}
