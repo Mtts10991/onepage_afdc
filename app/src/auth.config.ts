@@ -10,6 +10,13 @@ import "@/lib/env";
 export const authConfig: NextAuthConfig = {
   pages: {
     signIn: "/login",
+    // Route ALL NextAuth errors back to /login instead of the default
+    // /api/auth/error page. NextAuth appends `?error=<code>` (e.g.
+    // AccessDenied, Configuration, Verification); the login form below
+    // reads that param and renders a translated, user-facing message.
+    // Without this, an unhandled exception in a callback dead-ends the
+    // user on a bare JSON-ish error page.
+    error: "/login",
   },
   session: { strategy: "jwt" },
   callbacks: {

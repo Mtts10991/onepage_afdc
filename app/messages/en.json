@@ -117,6 +117,8 @@
     "lineErrorNoEmail": "This LINE account did not share an email and cannot be linked",
     "lineErrorInactive": "Account is inactive — contact your administrator",
     "lineErrorGeneric": "LINE sign-in failed",
+    "errorConfiguration": "The sign-in service had a temporary problem — please try again",
+    "errorGeneric": "Sign-in failed — please try again",
     "lineAccountTitle": "LINE account link",
     "lineLinkedDesc": "Your account is linked to LINE — use the \"Sign in with LINE\" button on the login page",
     "lineUnlinkedDesc": "Not linked yet — click to link a LINE account whose email is {email}",

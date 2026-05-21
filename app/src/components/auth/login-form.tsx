@@ -28,10 +28,14 @@ export function LoginForm({ lineEnabled }: LoginFormProps) {
   // auto-dismiss and live in a region many assistive techs don't poll.
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Surface LINE OAuth rejections that the server-side `signIn` callback
-  // redirected here with (e.g. `?error=line_no_matching_user`). NextAuth
-  // already filters its own `?error=` codes, so we only react to the
-  // `line_*` prefix we emit ourselves.
+  // Surface sign-in failures redirected here via `?error=<code>`.
+  // Two families of codes land here:
+  //  - `line_*` — emitted by our own server-side `signIn` callback for
+  //    explained LINE rejections (no matching user, inactive, etc).
+  //  - NextAuth's built-in codes (AccessDenied, Configuration,
+  //    Verification, …) — these reach /login because auth.config.ts sets
+  //    `pages.error: "/login"`, so the user never sees the bare
+  //    /api/auth/error page. We map them to friendly translated text.
   useEffect(() => {
     const err = params.get("error");
     if (!err) return;
@@ -43,6 +47,13 @@ export function LoginForm({ lineEnabled }: LoginFormProps) {
       setErrorMsg(t("auth.lineErrorInactive"));
     } else if (err.startsWith("line_")) {
       setErrorMsg(t("auth.lineErrorGeneric"));
+    } else if (err === "Configuration") {
+      // Server-side misconfiguration or an unhandled callback exception.
+      setErrorMsg(t("auth.errorConfiguration"));
+    } else {
+      // AccessDenied, Verification, OAuthSignin, and any other NextAuth
+      // code — a single generic, non-alarming fallback.
+      setErrorMsg(t("auth.errorGeneric"));
     }
   }, [params, t]);
 
