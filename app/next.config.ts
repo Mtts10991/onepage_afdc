@@ -55,7 +55,10 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      // Supabase project origin is allowed so uploaded images served from
+      // the public `uploads` bucket render. LINE CDN avatars are NOT listed
+      // here on purpose — they go through /api/avatar-proxy (same-origin).
+      `img-src 'self' data: blob:${SUPABASE_ORIGIN ? ` ${SUPABASE_ORIGIN}` : ""}`,
       "font-src 'self' data:",
       // The browser PUTs files straight to Supabase Storage via a signed
       // URL (see /api/upload/sign), so the Supabase project origin must be
