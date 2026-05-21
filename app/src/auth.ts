@@ -290,6 +290,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return `/login?error=line_unknown`;
       }
 
+      // The id we link the Account to MUST be the one we just confirmed
+      // exists (`row.id`), NOT the id profile() handed us (`id`). When the
+      // email-fallback above resolved a *different* row — or when `id` was
+      // produced by a profile() create that this connection can't see yet —
+      // inserting `userId: id` violates Account_userId_fkey and NextAuth
+      // surfaces it as a bare "AccessDenied". `row.id` is the row this
+      // transaction can actually see.
+      const linkedUserId = row.id;
+
       // Persist (or refresh) the Account row so subsequent logins by the
       // same LINE identity skip the email lookup. We store only what's
       // needed to recognise the LINE identity again — no access token
@@ -297,34 +306,73 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const lineSub = (profile as any)?.sub as string | undefined;
       let isNewLink = false;
       if (lineSub) {
-        const existing = await prisma.account.findUnique({
-          where: {
-            provider_providerAccountId: {
+        // Run the existence re-check and the upsert inside ONE interactive
+        // transaction. On the Supabase pgbouncer transaction pooler every
+        // separate `await prisma.x` can land on a different backend with a
+        // different MVCC snapshot, so a User row committed moments earlier
+        // (or even a day earlier, under connection_limit=1 contention) is
+        // not guaranteed visible to a later standalone statement. A single
+        // $transaction pins both statements to the same backend/snapshot,
+        // giving read-your-writes — which is exactly what the FK check needs.
+        //
+        // Wrapped in try/catch so a transient linking failure degrades to
+        // "login works, Account row written next time" instead of blocking
+        // the session with AccessDenied.
+        try {
+          isNewLink = await prisma.$transaction(async (tx) => {
+            // Re-confirm the parent row is visible *on this backend* before
+            // the FK insert — same snapshot as the upsert below.
+            const parent = await tx.user.findUnique({
+              where: { id: linkedUserId },
+              select: { id: true },
+            });
+            if (!parent) {
+              // Parent genuinely not visible here — skip the link rather
+              // than throw an FK violation. Next login will retry.
+              return false;
+            }
+            const existing = await tx.account.findUnique({
+              where: {
+                provider_providerAccountId: {
+                  provider: "line",
+                  providerAccountId: lineSub,
+                },
+              },
+              select: { id: true },
+            });
+            await tx.account.upsert({
+              where: {
+                provider_providerAccountId: {
+                  provider: "line",
+                  providerAccountId: lineSub,
+                },
+              },
+              create: {
+                userId: linkedUserId,
+                type: "oauth",
+                provider: "line",
+                providerAccountId: lineSub,
+              },
+              update: { userId: linkedUserId },
+            });
+            return !existing;
+          });
+        } catch (err) {
+          // Account linking failed — log it, but DO NOT fail the login.
+          // The user still has a valid session; the email-lookup path in
+          // resolveLineUser() keeps working until the link succeeds.
+          await audit("auth.line.link_failed", {
+            actorId: linkedUserId,
+            actorEmail: row.email,
+            metadata: {
               provider: "line",
-              providerAccountId: lineSub,
+              error: err instanceof Error ? err.message : String(err),
             },
-          },
-          select: { id: true },
-        });
-        isNewLink = !existing;
-        await prisma.account.upsert({
-          where: {
-            provider_providerAccountId: {
-              provider: "line",
-              providerAccountId: lineSub,
-            },
-          },
-          create: {
-            userId: id,
-            type: "oauth",
-            provider: "line",
-            providerAccountId: lineSub,
-          },
-          update: { userId: id },
-        });
+          });
+        }
         if (isNewLink) {
           await audit("auth.line.linked", {
-            actorId: id,
+            actorId: linkedUserId,
             actorEmail: (user as any).email ?? null,
           });
         }
@@ -336,20 +384,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // poll /admin/pending-users.
       if (row.status === "PENDING" && isNewLink) {
         await audit("auth.line.registered", {
-          actorId: id,
+          actorId: linkedUserId,
           actorEmail: row.email,
           metadata: { provider: "line" },
         });
         // Fire-and-forget — admin notification failure should never
         // block the user's session from being created.
-        await notifyAdminsPendingUser({
-          pendingUserEmail: row.email,
-          pendingUserName: (user as any).name ?? null,
-        });
+        try {
+          await notifyAdminsPendingUser({
+            pendingUserEmail: row.email,
+            pendingUserName: (user as any).name ?? null,
+          });
+        } catch {
+          // Notification is best-effort; never let it fail the login.
+        }
       }
 
       await audit("auth.login.success", {
-        actorId: id,
+        actorId: linkedUserId,
         actorEmail: (user as any).email ?? null,
         metadata: { provider: "line", status: row.status },
       });

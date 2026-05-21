@@ -24,3 +24,4 @@ public/uploads/*
 # IDE
 .vscode
 .idea
+.vercel
