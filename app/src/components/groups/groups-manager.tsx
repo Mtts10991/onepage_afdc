@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { confirmDialog } from "@/lib/confirm";
-import { Plus, Edit, Trash2, UserPlus, X } from "lucide-react";
+import { Plus, Edit, Trash2, UserPlus, X, Loader2 } from "lucide-react";
 
 interface UserLite {
   id: string;
@@ -104,6 +104,8 @@ export function GroupsManager({ groups, allUsers }: Props) {
     }
   }
 
+  // Mutations return a Promise so GroupCard can await them and drive its
+  // own per-row spinner; errors are toasted here.
   async function addMember(groupId: string, userId: string) {
     const res = await fetch(`/api/groups/${groupId}/members`, {
       method: "POST",
@@ -211,13 +213,51 @@ function GroupCard({
   group: GroupRow;
   allUsers: UserLite[];
   onEdit: () => void;
-  onDelete: () => void;
-  onAddMember: (userId: string) => void;
-  onRemoveMember: (userId: string) => void;
+  onDelete: () => Promise<void>;
+  onAddMember: (userId: string) => Promise<void>;
+  onRemoveMember: (userId: string) => Promise<void>;
 }) {
   const t = useTranslations();
   const memberIds = new Set(group.members.map((m) => m.user.id));
   const nonMembers = allUsers.filter((u) => !memberIds.has(u.id));
+
+  // Per-card loading flags so a slow API round trip can't be triggered
+  // twice: `deleting` for the card's delete, `adding` for the member
+  // selector, `removingId` for the specific member's ✕ button.
+  const [deleting, setDeleting] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const busy = deleting || adding || removingId !== null;
+
+  async function handleDelete() {
+    if (busy) return;
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleAdd(userId: string) {
+    if (busy) return;
+    setAdding(true);
+    try {
+      await onAddMember(userId);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleRemove(userId: string) {
+    if (busy) return;
+    setRemovingId(userId);
+    try {
+      await onRemoveMember(userId);
+    } finally {
+      setRemovingId(null);
+    }
+  }
 
   return (
     <Card className="anim-slide-up">
@@ -240,6 +280,7 @@ function GroupCard({
             variant="ghost"
             size="icon"
             onClick={onEdit}
+            disabled={busy}
             aria-label={t("common.edit")}
             title={t("common.edit")}
           >
@@ -248,12 +289,14 @@ function GroupCard({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onDelete}
+            onClick={handleDelete}
+            loading={deleting}
+            disabled={busy}
             aria-label={t("common.delete")}
             title={t("common.delete")}
             className="text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4" />
+            {deleting ? null : <Trash2 className="h-4 w-4" />}
           </Button>
         </div>
       </CardHeader>
@@ -287,11 +330,13 @@ function GroupCard({
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 shrink-0"
-                  onClick={() => onRemoveMember(m.user.id)}
+                  onClick={() => handleRemove(m.user.id)}
+                  loading={removingId === m.user.id}
+                  disabled={busy}
                   aria-label={t("groups.removeMember")}
                   title={t("groups.removeMember")}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  {removingId === m.user.id ? null : <X className="h-3.5 w-3.5" />}
                 </Button>
               </li>
             ))
@@ -300,17 +345,28 @@ function GroupCard({
 
         {nonMembers.length > 0 && (
           <div className="flex items-center gap-2">
-            <UserPlus className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+            {adding ? (
+              <Loader2
+                className="h-3.5 w-3.5 animate-spin text-muted-foreground"
+                aria-hidden="true"
+              />
+            ) : (
+              <UserPlus
+                className="h-3.5 w-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />
+            )}
             <select
               defaultValue=""
+              disabled={busy}
               onChange={(e) => {
                 const v = e.target.value;
                 if (v) {
-                  onAddMember(v);
+                  handleAdd(v);
                   e.target.value = "";
                 }
               }}
-              className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring"
+              className="h-8 flex-1 rounded-md border border-input bg-background px-2 text-xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={t("groups.addMember")}
             >
               <option value="">{t("groups.addMember")}</option>

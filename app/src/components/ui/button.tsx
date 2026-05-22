@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
@@ -44,17 +45,33 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /**
+   * While true the button is disabled and shows a spinner. Use this to
+   * block double-clicks on async actions (delete, toggle, save) so a slow
+   * API/Supabase response can't be triggered twice.
+   */
+  loading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  (
+    { className, variant, size, asChild = false, loading = false, disabled, children, ...props },
+    ref
+  ) => {
     const Comp = asChild ? Slot : "button";
+    // asChild forwards to a single child element (Radix Slot), so we can't
+    // inject a sibling spinner — only the plain <button> path gets one.
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
         {...props}
-      />
+      >
+        {!asChild && loading && <Loader2 className="animate-spin" aria-hidden="true" />}
+        {children}
+      </Comp>
     );
   }
 );

@@ -57,6 +57,9 @@ export function TemplatesManager({ templates, title, description }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const [editing, setEditing] = useState<TemplateRow | null>(null);
+  // id of the template whose delete request is in flight — drives the
+  // per-card spinner and blocks a second click on a slow API round trip.
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function saveEdit(name: string, descriptionText: string) {
     if (!editing) return;
@@ -78,12 +81,20 @@ export function TemplatesManager({ templates, title, description }: Props) {
   }
 
   async function performDelete(tpl: TemplateRow) {
-    const res = await fetch(`/api/templates/${tpl.id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success(t("templates.deleted"));
-      router.refresh();
-    } else {
+    if (deletingId) return;
+    setDeletingId(tpl.id);
+    try {
+      const res = await fetch(`/api/templates/${tpl.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(t("templates.deleted"));
+        router.refresh();
+      } else {
+        toast.error(t("common.error"));
+      }
+    } catch {
       toast.error(t("common.error"));
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -151,6 +162,7 @@ export function TemplatesManager({ templates, title, description }: Props) {
                       variant="ghost"
                       size="sm"
                       onClick={() => setEditing(tpl)}
+                      disabled={deletingId === tpl.id}
                       aria-label={t("common.edit")}
                       title={t("common.edit")}
                     >
@@ -160,6 +172,7 @@ export function TemplatesManager({ templates, title, description }: Props) {
                       variant="ghost"
                       size="sm"
                       onClick={async () => {
+                        if (deletingId) return;
                         const ok = await confirmDialog({
                           title: t("templates.deleteConfirmTitle"),
                           text: t("templates.deleteConfirmDescription", {
@@ -170,11 +183,19 @@ export function TemplatesManager({ templates, title, description }: Props) {
                         });
                         if (ok) await performDelete(tpl);
                       }}
+                      loading={deletingId === tpl.id}
+                      disabled={deletingId === tpl.id}
                       aria-label={t("common.delete")}
                       title={t("common.delete")}
                       className="text-destructive hover:text-destructive"
                     >
-                      <Trash2 className="h-4 w-4" /> {t("common.delete")}
+                      {deletingId === tpl.id ? (
+                        t("common.deleting")
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" /> {t("common.delete")}
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}

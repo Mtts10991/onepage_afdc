@@ -26,6 +26,9 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  // Real upload progress (0-100) from XHR upload.onprogress. Stays at 100
+  // while the server finalizes the response; -1 means no upload in flight.
+  const [progress, setProgress] = useState(-1);
   const [dragOver, setDragOver] = useState(false);
 
   // Read a picked/dropped image file into a data URL and open the crop
@@ -69,8 +72,34 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
     return map[code ?? ""] ?? tu("failed");
   }
 
+  // PUT a blob and report real upload progress. fetch() can't surface
+  // upload progress, so we drop to XMLHttpRequest, which fires
+  // upload.onprogress with loaded/total byte counts.
+  function putWithProgress(
+    url: string,
+    body: Blob | FormData,
+    contentType?: string,
+  ): Promise<{ ok: boolean; status: number; text: string }> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+      if (contentType) xhr.setRequestHeader("Content-Type", contentType);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+      xhr.onload = () =>
+        resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, text: xhr.responseText });
+      xhr.onerror = () => reject(new Error("network"));
+      xhr.onabort = () => reject(new Error("aborted"));
+      xhr.send(body);
+    });
+  }
+
   async function uploadBlob(blob: Blob) {
     setUploading(true);
+    setProgress(0);
     try {
       const contentType = blob.type || "image/png";
 
@@ -87,11 +116,7 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
         // Step 2 — PUT the bytes STRAIGHT to Supabase Storage. The file
         // never passes through a Vercel function, so there is no 4.5 MB
         // limit on it — only the bucket's own (much larger) limit.
-        const putRes = await fetch(signedUrl, {
-          method: "PUT",
-          headers: { "Content-Type": contentType },
-          body: blob,
-        });
+        const putRes = await putWithProgress(signedUrl, blob, contentType);
         if (!putRes.ok) {
           toast.error(tu("failed"));
           return;
@@ -127,6 +152,7 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
       toast.error(tu("failed"));
     } finally {
       setUploading(false);
+      setProgress(-1);
     }
   }
 
@@ -173,7 +199,7 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
         ) : (
           <span className="text-xs text-muted-foreground">{t("dragDrop")}</span>
         )}
-        {value && (
+        {value && !uploading && (
           <button
             type="button"
             // stopPropagation: the frame is now a click-to-pick zone, so a
@@ -188,6 +214,29 @@ export function ImagePicker({ value, onChange, aspect }: Props) {
           >
             <X className="h-3 w-3 transition-transform duration-150" />
           </button>
+        )}
+
+        {uploading && (
+          <div
+            className="absolute inset-0 grid place-items-center gap-2 bg-background/80 backdrop-blur-sm p-4"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="w-full max-w-[180px] space-y-1.5">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                {/* progress < 0 should never show here, but clamp anyway */}
+                <div
+                  className="h-full bg-primary transition-[width] duration-200 ease-out"
+                  style={{ width: `${Math.max(0, progress)}%` }}
+                />
+              </div>
+              <p className="text-center text-xs font-medium text-muted-foreground">
+                {progress >= 100
+                  ? tu("finalizing")
+                  : tu("progress", { percent: Math.max(0, progress) })}
+              </p>
+            </div>
+          </div>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -42,11 +43,29 @@ type User = {
   createdAt: string;
 };
 
+/**
+ * Submit button for the user form. Lives inside <form action={save}>, so
+ * useFormStatus().pending is true for the whole server-action round trip —
+ * which disables the button and blocks a duplicate submit on slow networks.
+ */
+function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" loading={pending}>
+      {pending ? pendingLabel : label}
+    </Button>
+  );
+}
+
 export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
   const t = useTranslations();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
+  // id of the user whose toggle/delete request is in flight. Used to show a
+  // per-row spinner and block a second click while the API/Supabase round
+  // trip is still pending.
+  const [actingId, setActingId] = useState<string | null>(null);
 
   async function refresh() {
     router.refresh();
@@ -101,21 +120,41 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
   }
 
   async function toggleActive(u: User) {
-    await fetch(`/api/users/${u.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !u.isActive }),
-    });
-    refresh();
+    if (actingId) return;
+    setActingId(u.id);
+    try {
+      const res = await fetch(`/api/users/${u.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !u.isActive }),
+      });
+      if (!res.ok) {
+        toast.error(t("common.error"));
+        return;
+      }
+      refresh();
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setActingId(null);
+    }
   }
 
   async function performDelete(u: User) {
-    const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success(t("users.deleted"));
-      refresh();
-    } else {
+    if (actingId) return;
+    setActingId(u.id);
+    try {
+      const res = await fetch(`/api/users/${u.id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success(t("users.deleted"));
+        refresh();
+      } else {
+        toast.error(t("common.error"));
+      }
+    } catch {
       toast.error(t("common.error"));
+    } finally {
+      setActingId(null);
     }
   }
 
@@ -230,7 +269,7 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
                 )}
               </div>
               <DialogFooter>
-                <Button type="submit">{t("common.save")}</Button>
+                <SubmitButton label={t("common.save")} pendingLabel={t("common.saving")} />
               </DialogFooter>
             </form>
           </DialogContent>
@@ -279,6 +318,7 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
                         setEditing(u);
                         setOpen(true);
                       }}
+                      disabled={actingId !== null}
                       aria-label={t("users.edit")}
                       title={t("users.edit")}
                     >
@@ -288,16 +328,19 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
                       variant="ghost"
                       size="icon"
                       onClick={() => toggleActive(u)}
+                      loading={actingId === u.id}
+                      disabled={actingId !== null}
                       aria-label={u.isActive ? t("users.disable") : t("users.enable")}
                       title={u.isActive ? t("users.disable") : t("users.enable")}
                       aria-pressed={u.isActive}
                     >
-                      <Power className="h-4 w-4" />
+                      {actingId === u.id ? null : <Power className="h-4 w-4" />}
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={async () => {
+                        if (actingId) return;
                         const ok = await confirmDialog({
                           title: t("common.delete"),
                           text: t("users.deleteConfirm", { email: u.email }),
@@ -306,10 +349,12 @@ export function UsersManager({ initialUsers }: { initialUsers: User[] }) {
                         });
                         if (ok) await performDelete(u);
                       }}
+                      loading={actingId === u.id}
+                      disabled={actingId !== null}
                       aria-label={t("common.delete")}
                       title={t("common.delete")}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {actingId === u.id ? null : <Trash2 className="h-4 w-4" />}
                     </Button>
                   </TableCell>
                 </TableRow>

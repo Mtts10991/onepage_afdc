@@ -148,6 +148,8 @@
   "common": {
     "save": "Save",
     "saving": "Saving...",
+    "deleting": "Deleting...",
+    "processing": "Processing...",
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
@@ -322,7 +324,9 @@
     "dimensionsTooLarge": "Image dimensions too large (max {max}×{max} pixels)",
     "invalidImage": "Invalid or corrupted image",
     "emptyFile": "File is empty",
-    "failed": "Upload failed"
+    "failed": "Upload failed",
+    "progress": "Uploading {percent}%",
+    "finalizing": "Finalizing..."
   },
   "theme": {
     "light": "Light",
