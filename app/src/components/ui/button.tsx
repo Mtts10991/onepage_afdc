@@ -59,8 +59,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const Comp = asChild ? Slot : "button";
-    // asChild forwards to a single child element (Radix Slot), so we can't
-    // inject a sibling spinner — only the plain <button> path gets one.
+    // Radix Slot requires EXACTLY ONE child — passing a {false}{children}
+    // pair makes a 2-element array and throws React error #143. So the
+    // spinner is only ever injected on the plain <button> path; asChild
+    // forwards `children` untouched (loading there only sets disabled).
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
@@ -69,8 +71,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={loading || undefined}
         {...props}
       >
-        {!asChild && loading && <Loader2 className="animate-spin" aria-hidden="true" />}
-        {children}
+        {asChild ? (
+          children
+        ) : (
+          <>
+            {loading && <Loader2 className="animate-spin" aria-hidden="true" />}
+            {children}
+          </>
+        )}
       </Comp>
     );
   }
